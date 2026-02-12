@@ -1,0 +1,155 @@
+{
+  "name": "KPI Daily Auto-Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cron Trigger Daily 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH yesterday_kpis AS (\n    SELECT\n        order_date,\n        COUNT(DISTINCT order_id) AS total_orders,\n        SUM(order_amount) AS total_revenue,\n        COUNT(DISTINCT customer_id) AS unique_customers,\n        ROUND(SUM(order_amount) / NULLIF(COUNT(DISTINCT order_id), 0), 2) AS avg_order_value,\n        SUM(quantity) AS total_units_sold\n    FROM orders\n    WHERE order_date = CURRENT_DATE - INTERVAL '1 day'\n    GROUP BY order_date\n)\nSELECT\n    yk.order_date,\n    yk.total_orders,\n    yk.total_revenue,\n    yk.unique_customers,\n    yk.avg_order_value,\n    yk.total_units_sold,\n    COALESCE(ds.total_visitors, 0) AS total_visitors,\n    COALESCE(ds.conversion_rate, 0.00) AS conversion_rate\nFROM yesterday_kpis yk\nLEFT JOIN daily_summary ds ON ds.summary_date = yk.order_date;"
+      },
+      "id": "postgres-yesterday",
+      "name": "PostgreSQL - Yesterday KPIs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "credentials": {
+        "postgres": "PostgreSQL Credentials"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH last_week_kpis AS (\n    SELECT\n        order_date,\n        COUNT(DISTINCT order_id) AS total_orders,\n        SUM(order_amount) AS total_revenue,\n        COUNT(DISTINCT customer_id) AS unique_customers,\n        ROUND(SUM(order_amount) / NULLIF(COUNT(DISTINCT order_id), 0), 2) AS avg_order_value,\n        SUM(quantity) AS total_units_sold\n    FROM orders\n    WHERE order_date = CURRENT_DATE - INTERVAL '8 days'\n    GROUP BY order_date\n)\nSELECT\n    lk.order_date,\n    lk.total_orders,\n    lk.total_revenue,\n    lk.unique_customers,\n    lk.avg_order_value,\n    lk.total_units_sold,\n    COALESCE(ds.total_visitors, 0) AS total_visitors,\n    COALESCE(ds.conversion_rate, 0.00) AS conversion_rate\nFROM last_week_kpis lk\nLEFT JOIN daily_summary ds ON ds.summary_date = lk.order_date;"
+      },
+      "id": "postgres-lastweek",
+      "name": "PostgreSQL - Last Week KPIs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": "PostgreSQL Credentials"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH product_sales AS (\n    SELECT\n        product_id,\n        product_name,\n        SUM(order_amount) AS total_revenue,\n        SUM(quantity) AS units_sold,\n        COUNT(DISTINCT order_id) AS order_count,\n        ROUND(AVG(unit_price), 2) AS avg_unit_price\n    FROM orders\n    WHERE order_date = CURRENT_DATE - INTERVAL '1 day'\n    GROUP BY product_id, product_name\n),\nranked_products AS (\n    SELECT\n        product_id,\n        product_name,\n        total_revenue,\n        units_sold,\n        order_count,\n        avg_unit_price,\n        RANK() OVER (ORDER BY total_revenue DESC) AS revenue_rank,\n        ROUND((total_revenue / SUM(total_revenue) OVER ()) * 100, 2) AS revenue_share_pct\n    FROM product_sales\n)\nSELECT\n    revenue_rank AS rank,\n    product_name,\n    total_revenue,\n    units_sold,\n    order_count,\n    avg_unit_price,\n    revenue_share_pct\nFROM ranked_products\nWHERE revenue_rank <= 3\nORDER BY revenue_rank;"
+      },
+      "id": "postgres-products",
+      "name": "PostgreSQL - Top Products",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "credentials": {
+        "postgres": "PostgreSQL Credentials"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Full implementation: see n8n/transform.js\n// Paste the contents of transform.js here when importing to n8n"
+      },
+      "id": "function-transform",
+      "name": "Transform Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#business-kpis",
+        "text": "={{ $json.message }}"
+      },
+      "id": "slack-send",
+      "name": "Send Slack Message",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "slackApi": "Slack Webhook"
+      }
+    }
+  ],
+  "connections": {
+    "Cron Trigger Daily 08:00": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Yesterday KPIs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostgreSQL - Last Week KPIs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostgreSQL - Top Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Yesterday KPIs": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Last Week KPIs": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Top Products": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Transform Data": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

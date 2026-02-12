@@ -1,0 +1,23 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Claude Code (local settings)
+.claude/
+
+# bkit internal state
+docs/.bkit-memory.json
+docs/.pdca-snapshots/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

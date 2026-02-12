@@ -1,0 +1,74 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-02-12T18:22:48.879Z",
+  "activeFeatures": [
+    "n8n"
+  ],
+  "primaryFeature": "n8n",
+  "features": {
+    "ecommerce-kpi-reporter": {
+      "phase": "archived",
+      "matchRate": 95,
+      "iterationCount": 0,
+      "startedAt": "2026-02-13T00:00:00.000Z",
+      "archivedAt": "2026-02-13T00:00:00.000Z",
+      "archivedTo": "docs/archive/2026-02/ecommerce-kpi-reporter/"
+    },
+    "n8n": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T18:22:48.879Z",
+        "lastUpdated": "2026-02-12T18:22:48.879Z"
+      },
+      "lastFile": "E:/프로젝트/KPI_Auto_Report(Athome)/n8n/transform.js"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-02-12T18:04:46.415Z",
+    "onboardingCompleted": true,
+    "lastActivity": "2026-02-12T18:22:48.879Z"
+  },
+  "history": [
+    {
+      "action": "plan_created",
+      "feature": "ecommerce-kpi-reporter",
+      "timestamp": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "action": "design_created",
+      "feature": "ecommerce-kpi-reporter",
+      "timestamp": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "timestamp": "2026-02-12T18:22:48.879Z",
+      "feature": "n8n",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "action": "report_created",
+      "feature": "ecommerce-kpi-reporter",
+      "phase": "completed",
+      "matchRate": 95,
+      "timestamp": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "action": "archived",
+      "feature": "ecommerce-kpi-reporter",
+      "phase": "archived",
+      "archivedTo": "docs/archive/2026-02/ecommerce-kpi-reporter/",
+      "preserveSummary": true,
+      "timestamp": "2026-02-13T00:00:00.000Z"
+    }
+  ]
+}
