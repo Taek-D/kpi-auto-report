@@ -8,7 +8,10 @@
 
 # bkit internal state
 docs/.bkit-memory.json
+docs/.pdca-status.json
 docs/.pdca-snapshots/
+docs/archive/
+CLAUDE.md
 
 # Node
 node_modules/
