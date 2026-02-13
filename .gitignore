@@ -13,6 +13,10 @@ docs/.pdca-snapshots/
 docs/archive/
 CLAUDE.md
 
+# Python
+__pycache__/
+*.pyc
+
 # Node
 node_modules/
 
@@ -20,6 +24,13 @@ node_modules/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# MCP plugins
+.playwright-mcp/
+
+# Local files (not for repo)
+*.png
+!output/*.png
 
 # Editor
 .vscode/
