@@ -1,39 +1,16 @@
 // ============================================================================
 // File: transform.js
-// Purpose: Supabase RPC 호출 + 데이터 변환 + 이상 탐지 (단일 Code 노드)
-// Usage: n8n Workflow의 Code Node에 붙여넣기
+// Purpose: WoW 분석 + 이상 탐지 + Slack 메시지 포맷팅 (Code Node)
+// Usage: n8n "WoW Analysis & Anomaly Detection" Code Node에 붙여넣기
 // ============================================================================
 
-const SUPABASE_URL = 'https://rjulhuseewaaxpbgyaah.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo';
-
 // ============================================================================
-// 0. Supabase RPC 호출 함수 (n8n 내장 httpRequest 사용)
+// 1. Merge 노드에서 데이터 참조
 // ============================================================================
+// Merge (Append) 순서: input 0 = Yesterday, input 1 = Last Week, input 2 = Top Products
+// 각 input의 아이템이 순서대로 합쳐져서 들어옴
 
-async function callRpc(functionName) {
-  return await this.helpers.httpRequest({
-    method: 'POST',
-    url: SUPABASE_URL + '/rest/v1/rpc/' + functionName,
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json'
-    },
-    body: {},
-    json: true
-  });
-}
-
-// ============================================================================
-// 1. 3개 RPC 병렬 호출
-// ============================================================================
-
-const [yesterdayData, lastWeekData, topProductsData] = await Promise.all([
-  callRpc.call(this, 'get_kpis_yesterday'),
-  callRpc.call(this, 'get_kpis_last_week'),
-  callRpc.call(this, 'get_top_products')
-]);
+const allItems = $input.all();
 
 const DEFAULT_KPI = {
   total_orders: 0,
@@ -45,21 +22,26 @@ const DEFAULT_KPI = {
   total_visitors: 0
 };
 
-const yesterday = (yesterdayData && yesterdayData[0]) ? yesterdayData[0] : DEFAULT_KPI;
-const lastWeek = (lastWeekData && lastWeekData[0]) ? lastWeekData[0] : DEFAULT_KPI;
-const topProducts = (topProductsData && topProductsData.length > 0) ? topProductsData : [];
+// 첫 번째 아이템 = Yesterday KPIs (input 0)
+// 두 번째 아이템 = Last Week KPIs (input 1)
+// 세 번째 이후 = Top Products (input 2)
+const yesterday = (allItems.length > 0) ? allItems[0].json : DEFAULT_KPI;
+const lastWeek = (allItems.length > 1) ? allItems[1].json : DEFAULT_KPI;
+const topProducts = (allItems.length > 2) ? allItems.slice(2).map(function(item) { return item.json; }) : [];
 
 // ============================================================================
 // 2. 데이터 없음 감지 (조기 반환)
 // ============================================================================
 
 const today = new Date().toISOString().split('T')[0];
-const hasNoData = !yesterdayData || !yesterdayData[0] || !yesterdayData[0].total_orders;
+const hasNoData = allItems.length === 0 || !yesterday.total_orders;
 
 if (hasNoData) {
   return [{
     json: {
-      message: '📊 *일일 E-commerce KPI 리포트* | ' + today + '\n\n⚠️ 어제 날짜에 대한 데이터가 없습니다. 데이터 소스를 확인해 주세요.',
+      slackPayload: JSON.stringify({
+        text: '📊 *일일 E-commerce KPI 리포트* | ' + today + '\n\n⚠️ 어제 날짜에 대한 데이터가 없습니다. 데이터 소스를 확인해 주세요.'
+      }),
       metadata: { date: today, has_data: false }
     }
   }];
@@ -91,7 +73,7 @@ function getTrendIcon(value) {
   return '→';
 }
 
-const hasLastWeek = lastWeekData && lastWeekData[0] && lastWeekData[0].total_orders;
+const hasLastWeek = allItems.length > 1 && lastWeek.total_orders;
 
 const wowRevenue = hasLastWeek ? calculateWoW(yesterday.total_revenue, lastWeek.total_revenue) : null;
 const wowOrders = hasLastWeek ? calculateWoW(yesterday.total_orders, lastWeek.total_orders) : null;
@@ -104,12 +86,17 @@ const wowConvRate = hasLastWeek ? (yesterday.conversion_rate - lastWeek.conversi
 
 var alerts = [];
 
+// 매출 급락 감지 (20% 이상 하락 → Critical)
 if (wowRevenue !== null && wowRevenue < -20) {
   alerts.push('🚨 *Critical*: 매출이 지난주 대비 ' + Math.abs(wowRevenue).toFixed(1) + '% 감소했습니다');
 }
+
+// 주문 수 급락 감지 (15% 이상 하락 → Warning)
 if (wowOrders !== null && wowOrders < -15) {
   alerts.push('⚠️ *Warning*: 주문 수가 지난주 대비 ' + Math.abs(wowOrders).toFixed(1) + '% 감소했습니다');
 }
+
+// 전환율 급락 감지 (10%p 이상 하락 → Warning)
 if (wowConvRate !== null && wowConvRate < -10) {
   alerts.push('⚠️ *Warning*: 전환율이 지난주 대비 ' + Math.abs(wowConvRate).toFixed(1) + '%p 감소했습니다');
 }
@@ -147,27 +134,13 @@ var slackMessage = '📊 *일일 E-commerce KPI 리포트* | ' + today + '\n\n'
   + '⏰ 리포트 생성: ' + new Date().toLocaleTimeString('ko-KR');
 
 // ============================================================================
-// 7. Slack Webhook 전송
-// ============================================================================
-
-// Slack Webhook URL은 n8n 컨테이너 환경변수에서 읽음
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-
-await this.helpers.httpRequest({
-  method: 'POST',
-  url: SLACK_WEBHOOK_URL,
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ text: slackMessage }),
-});
-
-// ============================================================================
-// 8. 출력 데이터 반환
+// 7. 출력 (Slack 노드로 전달)
 // ============================================================================
 
 return [{
   json: {
+    slackPayload: JSON.stringify({ text: slackMessage }),
     message: slackMessage,
-    slack_sent: true,
     metadata: {
       date: today,
       revenue: yesterday.total_revenue,

@@ -13,28 +13,213 @@
         }
       },
       "id": "cron-trigger",
-      "name": "Cron Trigger Daily 08:00",
+      "name": "Schedule: Daily 08:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
       "position": [250, 300]
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_kpis_yesterday",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "id": "http-yesterday",
+      "name": "Supabase: Yesterday KPIs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 140]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_kpis_last_week",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "id": "http-lastweek",
+      "name": "Supabase: Last Week KPIs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_top_products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "id": "http-products",
+      "name": "Supabase: Top Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 460]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3
+      },
+      "id": "merge-all",
+      "name": "Merge: Collect All Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
         "jsCode": "// Full implementation: see n8n/transform.js\n// Paste the contents of transform.js here when importing to n8n"
       },
       "id": "code-transform",
-      "name": "Fetch & Transform & Send",
+      "name": "WoW Analysis & Anomaly Detection",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 300]
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Full implementation: see n8n/slack_send.js\n// Paste the contents of slack_send.js here when importing to n8n"
+      },
+      "id": "slack-send",
+      "name": "Slack: Send KPI Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
     }
   ],
   "connections": {
-    "Cron Trigger Daily 08:00": {
+    "Schedule: Daily 08:00": {
       "main": [
         [
           {
-            "node": "Fetch & Transform & Send",
+            "node": "Supabase: Yesterday KPIs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase: Last Week KPIs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase: Top Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Yesterday KPIs": {
+      "main": [
+        [
+          {
+            "node": "Merge: Collect All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Last Week KPIs": {
+      "main": [
+        [
+          {
+            "node": "Merge: Collect All Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Supabase: Top Products": {
+      "main": [
+        [
+          {
+            "node": "Merge: Collect All Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge: Collect All Data": {
+      "main": [
+        [
+          {
+            "node": "WoW Analysis & Anomaly Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WoW Analysis & Anomaly Detection": {
+      "main": [
+        [
+          {
+            "node": "Slack: Send KPI Alert",
             "type": "main",
             "index": 0
           }
