@@ -1,5 +1,5 @@
 {
-  "name": "KPI Daily Auto-Report",
+  "name": "앳홈 KPI Daily Auto-Report",
   "nodes": [
     {
       "parameters": {
@@ -21,7 +21,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_kpis_yesterday",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_brand_kpis_yesterday",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -46,15 +46,15 @@
         "options": {}
       },
       "id": "http-yesterday",
-      "name": "Supabase: Yesterday KPIs",
+      "name": "Supabase: Yesterday Brand KPIs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [500, 140]
+      "position": [500, 80]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_kpis_last_week",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_brand_kpis_last_week",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -79,10 +79,10 @@
         "options": {}
       },
       "id": "http-lastweek",
-      "name": "Supabase: Last Week KPIs",
+      "name": "Supabase: Last Week Brand KPIs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [500, 300]
+      "position": [500, 240]
     },
     {
       "parameters": {
@@ -115,12 +115,45 @@
       "name": "Supabase: Top Products",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [500, 460]
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rjulhuseewaaxpbgyaah.supabase.co/rest/v1/rpc/get_competitor_changes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "id": "http-competitors",
+      "name": "Supabase: Competitor Changes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 560]
     },
     {
       "parameters": {
         "mode": "append",
-        "numberInputs": 3
+        "numberInputs": 4
       },
       "id": "merge-all",
       "name": "Merge: Collect All Data",
@@ -154,12 +187,12 @@
       "main": [
         [
           {
-            "node": "Supabase: Yesterday KPIs",
+            "node": "Supabase: Yesterday Brand KPIs",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Supabase: Last Week KPIs",
+            "node": "Supabase: Last Week Brand KPIs",
             "type": "main",
             "index": 0
           },
@@ -167,11 +200,16 @@
             "node": "Supabase: Top Products",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Supabase: Competitor Changes",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
-    "Supabase: Yesterday KPIs": {
+    "Supabase: Yesterday Brand KPIs": {
       "main": [
         [
           {
@@ -182,7 +220,7 @@
         ]
       ]
     },
-    "Supabase: Last Week KPIs": {
+    "Supabase: Last Week Brand KPIs": {
       "main": [
         [
           {
@@ -200,6 +238,17 @@
             "node": "Merge: Collect All Data",
             "type": "main",
             "index": 2
+          }
+        ]
+      ]
+    },
+    "Supabase: Competitor Changes": {
+      "main": [
+        [
+          {
+            "node": "Merge: Collect All Data",
+            "type": "main",
+            "index": 3
           }
         ]
       ]

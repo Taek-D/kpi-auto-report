@@ -1,6 +1,6 @@
 // ============================================================================
 // File: slack_send.js
-// Purpose: Slack Webhook으로 KPI 리포트 전송 (Code Node)
+// Purpose: Slack Webhook으로 앳홈 KPI 리포트 전송 (Code Node)
 // Usage: n8n "Slack: Send KPI Alert" Code Node에 붙여넣기
 // ============================================================================
 
@@ -15,7 +15,7 @@ const metadata = items[0].json.metadata;
 // ============================================================================
 // 2. Slack Webhook 전송
 // ============================================================================
-// ⚠️ 아래 URL을 실제 Slack Webhook URL로 교체하세요
+// 아래 URL을 실제 Slack Webhook URL로 교체하세요
 const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL';
 
 await this.helpers.httpRequest({
@@ -32,6 +32,7 @@ await this.helpers.httpRequest({
 return [{
   json: {
     status: 'sent',
+    title: '앳홈 Daily KPI 리포트',
     message: message,
     metadata: metadata,
     sent_at: new Date().toISOString()
