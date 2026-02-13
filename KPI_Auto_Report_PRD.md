@@ -171,10 +171,10 @@
 - [x] n8n 워크플로우 8노드 구성
 - [x] transform.js 브랜드별 분석 로직
 - [x] 경쟁사 모니터링 로직
-- [ ] Supabase 테이블/RPC 실제 생성
-- [ ] n8n 워크플로우 E2E 테스트
-- [ ] Slack 메시지 정상 수신 확인
-- [ ] GitHub push
+- [x] Supabase 테이블/RPC 실제 생성 (4 tables + 4 RPC functions)
+- [x] n8n 워크플로우 E2E 테스트 (8노드, 2.491s, Success)
+- [x] Slack 메시지 정상 수신 확인 (status: "sent", 619ms)
+- [x] GitHub push (d687e07)
 
 ---
 
