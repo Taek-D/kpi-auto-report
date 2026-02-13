@@ -7,13 +7,25 @@ Usage:
     python -m crawlers.main --crawl            # 크롤링 + 적재만
     python -m crawlers.main --analyze          # 분석만 (Supabase 기존 데이터)
     python -m crawlers.main --crawl --source coupang  # 쿠팡만 크롤링
+    python -m crawlers.main --report weekly    # 주간 요약 리포트
+    python -m crawlers.main --report monthly   # 월간 요약 리포트 + 차트
+    python -m crawlers.main --predict          # ML 매출 예측 분석
+    python -m crawlers.main --insight          # 비즈니스 인사이트 분석
+    python -m crawlers.main --abtest           # A/B 테스트 분석
 """
 
 import argparse
+import io
 import logging
 import sys
 
 from dotenv import load_dotenv
+
+# Windows cp949 인코딩 문제 해결 (이모지 출력)
+if sys.stdout.encoding != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.stderr.encoding != "utf-8":
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 from .analyzer import CompetitorAnalyzer
 from .config import CRAWL_TARGETS
@@ -85,6 +97,56 @@ def analyze() -> None:
         print("\n[경고] 차트를 생성하지 못했습니다.")
 
 
+def report(report_type: str) -> None:
+    """주간/월간 요약 리포트 생성"""
+    from .report_generator import WeeklyReportGenerator, MonthlyReportGenerator
+
+    if report_type == "weekly":
+        logger.info("=" * 40 + " 주간 리포트 생성 " + "=" * 40)
+        generator = WeeklyReportGenerator()
+        result = generator.generate()
+        print(result)
+
+    elif report_type == "monthly":
+        logger.info("=" * 40 + " 월간 리포트 생성 " + "=" * 40)
+        generator = MonthlyReportGenerator()
+        result = generator.generate()
+        print(result)
+
+    else:
+        logger.error(f"알 수 없는 리포트 유형: {report_type}")
+
+
+def predict() -> None:
+    """ML 매출 예측 분석"""
+    from .predictor import RevenuePredictor
+
+    logger.info("=" * 40 + " 매출 예측 분석 " + "=" * 40)
+    predictor = RevenuePredictor()
+    result = predictor.run(days=30)
+    print(result)
+
+
+def insight() -> None:
+    """비즈니스 인사이트 분석"""
+    from .insight_analyzer import InsightAnalyzer
+
+    logger.info("=" * 40 + " 인사이트 분석 " + "=" * 40)
+    analyzer = InsightAnalyzer()
+    result = analyzer.run(days=30)
+    print(result)
+
+
+def abtest() -> None:
+    """A/B 테스트 분석"""
+    from .ab_test_analyzer import ABTestAnalyzer
+
+    logger.info("=" * 40 + " A/B 테스트 분석 " + "=" * 40)
+    analyzer = ABTestAnalyzer()
+    result = analyzer.run()
+    print(result)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="앳홈 경쟁사 크롤링 & 분석 파이프라인",
@@ -95,16 +157,25 @@ Examples:
   python -m crawlers.main --crawl                 크롤링 + 적재만
   python -m crawlers.main --crawl --source naver  네이버만 크롤링
   python -m crawlers.main --analyze               분석 + 시각화만
+  python -m crawlers.main --report weekly         주간 요약 리포트
+  python -m crawlers.main --report monthly        월간 요약 리포트 + 차트
+  python -m crawlers.main --predict               ML 매출 예측 분석
+  python -m crawlers.main --insight               비즈니스 인사이트 분석
+  python -m crawlers.main --abtest                A/B 테스트 분석
         """,
     )
     parser.add_argument("--all", action="store_true", help="전체 파이프라인 실행 (크롤링+적재+분석)")
     parser.add_argument("--crawl", action="store_true", help="크롤링 + Supabase 적재")
     parser.add_argument("--analyze", action="store_true", help="Supabase 데이터 분석 + 시각화")
     parser.add_argument("--source", choices=["coupang", "naver"], help="특정 소스만 크롤링")
+    parser.add_argument("--report", choices=["weekly", "monthly"], help="주간/월간 요약 리포트 생성")
+    parser.add_argument("--predict", action="store_true", help="ML 매출 예측 분석")
+    parser.add_argument("--insight", action="store_true", help="비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴)")
+    parser.add_argument("--abtest", action="store_true", help="A/B 테스트 분석 (통계 검정 + 비즈니스 해석)")
 
     args = parser.parse_args()
 
-    if not any([args.all, args.crawl, args.analyze]):
+    if not any([args.all, args.crawl, args.analyze, args.report, args.predict, args.insight, args.abtest]):
         parser.print_help()
         sys.exit(1)
 
@@ -121,6 +192,22 @@ Examples:
     # 분석
     if args.all or args.analyze:
         analyze()
+
+    # 주간/월간 리포트
+    if args.report:
+        report(args.report)
+
+    # ML 예측
+    if args.predict:
+        predict()
+
+    # 인사이트 분석
+    if args.insight:
+        insight()
+
+    # A/B 테스트 분석
+    if args.abtest:
+        abtest()
 
     logger.info("파이프라인 완료")
 

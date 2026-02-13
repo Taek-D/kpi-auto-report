@@ -67,6 +67,61 @@ class SupabaseLoader:
         )
         return stats
 
+    def fetch_brand_sales(self, days: int = 30) -> list[dict]:
+        """brand_daily_sales 테이블에서 최근 N일 데이터 조회 (예측 분석용)"""
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return []
+
+        endpoint = f"{self.url}/rest/v1/brand_daily_sales"
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+        }
+        params = {
+            "select": "*",
+            "order": "sale_date.desc,brand,channel",
+            "limit": days * 15,  # 3 brands x 5 channels x days
+        }
+
+        try:
+            response = requests.get(endpoint, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"[Supabase] brand_daily_sales {len(data)}건 조회 완료")
+            return data
+        except requests.RequestException as e:
+            logger.error(f"[Supabase] brand_daily_sales 조회 실패: {e}")
+            return []
+
+    def call_rpc(self, function_name: str, params: dict | None = None) -> list[dict]:
+        """Supabase RPC 함수 호출"""
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return []
+
+        endpoint = f"{self.url}/rest/v1/rpc/{function_name}"
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            response = requests.post(
+                endpoint,
+                headers=headers,
+                json=params or {},
+                timeout=15,
+            )
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"[Supabase] RPC {function_name}: {len(data)}건 반환")
+            return data
+        except requests.RequestException as e:
+            logger.error(f"[Supabase] RPC {function_name} 호출 실패: {e}")
+            return []
+
     def fetch_competitors(self, limit: int = 1000) -> list[dict]:
         """market_competitors 테이블에서 데이터 조회 (분석용)"""
         if not self.url or not self.key:
@@ -92,4 +147,57 @@ class SupabaseLoader:
             return data
         except requests.RequestException as e:
             logger.error(f"[Supabase] 데이터 조회 실패: {e}")
+            return []
+
+    def fetch_competitors_extended(self, weeks: int = 8) -> list[dict]:
+        """market_competitors 테이블에서 최근 N주 데이터 조회 (장기 추이 분석용)"""
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return []
+
+        endpoint = f"{self.url}/rest/v1/market_competitors"
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+        }
+        params = {
+            "select": "*",
+            "order": "crawl_date.asc,source,category,ranking",
+            "limit": weeks * 15,  # ~13 products/week
+        }
+
+        try:
+            response = requests.get(endpoint, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"[Supabase] 경쟁사 {weeks}주 데이터 {len(data)}건 조회 완료")
+            return data
+        except requests.RequestException as e:
+            logger.error(f"[Supabase] 경쟁사 확장 데이터 조회 실패: {e}")
+            return []
+
+    def fetch_ab_test(self) -> list[dict]:
+        """ab_test_results 테이블에서 A/B 테스트 데이터 조회"""
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return []
+
+        endpoint = f"{self.url}/rest/v1/ab_test_results"
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+        }
+        params = {
+            "select": "*",
+            "order": "test_date.asc,variant",
+        }
+
+        try:
+            response = requests.get(endpoint, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"[Supabase] A/B 테스트 데이터 {len(data)}건 조회 완료")
+            return data
+        except requests.RequestException as e:
+            logger.error(f"[Supabase] A/B 테스트 데이터 조회 실패: {e}")
             return []

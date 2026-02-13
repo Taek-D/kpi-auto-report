@@ -32,12 +32,15 @@
 ### JD 키워드 매칭 (앳홈 AX팀 데이터분석가)
 | JD 키워드 | 프로젝트 역량 증명 |
 |-----------|------------------|
-| **크롤링/스크래핑** | market_competitors 테이블 (크롤링 데이터 저장/분석) |
+| **크롤링/스크래핑** | Playwright 쿠팡/네이버 크롤러 + market_competitors 적재 |
 | **SQL** | Window Functions, CTEs, JSONB, 복합 인덱스 |
-| **Python** | n8n Code Node (JavaScript, 동일 로직) |
-| **Tableau** | 데이터 파이프라인 (Tableau 대시보드 연동 가능) |
+| **Python** | Pandas 분석 + scikit-learn ML + scipy 통계 검정 |
+| **인사이트 도출** | 채널 믹스 변동, 경쟁사-매출 상관, 요일 패턴 분석 |
+| **A/B 테스트** | 실험 설계(Power Analysis) + 통계 검정(t-test, Mann-Whitney) + 비즈니스 해석 |
+| **ML 분석** | Ridge Regression 매출 예측 + 비즈니스 액션 플랜 + 리스크 평가 |
 | **n8n 자동화** | 8노드 워크플로우, 병렬 실행 |
 | **데이터 정합성** | UNIQUE 제약조건, COALESCE, NULL 처리 |
+| **시각화** | Matplotlib 11종 차트 (히트맵, 상관 scatter, A/B 비교, 예측 등) |
 
 ---
 
@@ -145,7 +148,8 @@
 - `brand_daily_sales`: 브랜드(3) x 채널(5) 일일 매출 (복합 인덱스: sale_date + brand)
 - `products`: 제품 마스터 14개 (앳홈 실제 제품명)
 - `product_daily_sales`: 제품별 일일 매출 + 평점/리뷰
-- `market_competitors`: 경쟁사 크롤링 데이터 (순위/가격/리뷰)
+- `market_competitors`: 경쟁사 크롤링 데이터 (순위/가격/리뷰, 8주 추이)
+- `ab_test_results`: A/B 테스트 결과 (미닉스 자사몰 결제 페이지 개선)
 
 ### RPC 함수 (Supabase)
 1. `get_brand_kpis_yesterday()`: 브랜드별 어제 KPI + 채널 breakdown (JSONB)
@@ -175,6 +179,11 @@
 - [x] n8n 워크플로우 E2E 테스트 (8노드, 2.491s, Success)
 - [x] Slack 메시지 정상 수신 확인 (status: "sent", 619ms)
 - [x] GitHub push (d687e07)
+- [x] 비즈니스 인사이트 분석 모듈 (채널 믹스, 경쟁사 상관, 요일 패턴)
+- [x] A/B 테스트 분석 모듈 (실험 설계 검증 + 통계 검정 + 비즈니스 해석)
+- [x] ML 예측 비즈니스 스토리 (액션 플랜 + 리스크 평가)
+- [x] 경쟁사 8주 확장 데이터 (장기 추이 분석)
+- [x] 시각화 11종 차트 (히트맵, scatter, A/B 비교, 예측 등)
 
 ---
 
