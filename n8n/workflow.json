@@ -20,69 +20,13 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT\n    sale_date AS order_date,\n    orders AS total_orders,\n    revenue AS total_revenue,\n    0 AS unique_customers,\n    CASE WHEN orders > 0 THEN ROUND(revenue::DECIMAL / orders, 2) ELSE 0 END AS avg_order_value,\n    quantity_sold AS total_units_sold,\n    COALESCE(visitors, 0) AS total_visitors,\n    COALESCE(conversion_rate, 0.00) AS conversion_rate\nFROM daily_sales\nWHERE sale_date = CURRENT_DATE - INTERVAL '1 day';"
+        "jsCode": "// Full implementation: see n8n/transform.js\n// Paste the contents of transform.js here when importing to n8n"
       },
-      "id": "postgres-yesterday",
-      "name": "PostgreSQL - Yesterday KPIs",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1,
-      "position": [450, 200],
-      "credentials": {
-        "postgres": "PostgreSQL Credentials"
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT\n    sale_date AS order_date,\n    orders AS total_orders,\n    revenue AS total_revenue,\n    0 AS unique_customers,\n    CASE WHEN orders > 0 THEN ROUND(revenue::DECIMAL / orders, 2) ELSE 0 END AS avg_order_value,\n    quantity_sold AS total_units_sold,\n    COALESCE(visitors, 0) AS total_visitors,\n    COALESCE(conversion_rate, 0.00) AS conversion_rate\nFROM daily_sales\nWHERE sale_date = CURRENT_DATE - INTERVAL '8 days';"
-      },
-      "id": "postgres-lastweek",
-      "name": "PostgreSQL - Last Week KPIs",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1,
-      "position": [450, 300],
-      "credentials": {
-        "postgres": "PostgreSQL Credentials"
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "WITH ranked_products AS (\n    SELECT\n        p.product_name,\n        ps.revenue AS total_revenue,\n        ps.quantity_sold AS units_sold,\n        ps.orders AS order_count,\n        CASE WHEN ps.quantity_sold > 0 THEN ROUND(ps.revenue::DECIMAL / ps.quantity_sold, 2) ELSE 0 END AS avg_unit_price,\n        RANK() OVER (ORDER BY ps.revenue DESC) AS revenue_rank,\n        ROUND((ps.revenue::DECIMAL / NULLIF(SUM(ps.revenue) OVER (), 0)) * 100, 2) AS revenue_share_pct\n    FROM product_sales ps\n    JOIN products p ON p.product_id = ps.product_id\n    WHERE ps.revenue > 0\n)\nSELECT\n    revenue_rank AS rank,\n    product_name,\n    total_revenue,\n    units_sold,\n    order_count,\n    avg_unit_price,\n    revenue_share_pct\nFROM ranked_products\nWHERE revenue_rank <= 3\nORDER BY revenue_rank;"
-      },
-      "id": "postgres-products",
-      "name": "PostgreSQL - Top Products",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1,
-      "position": [450, 400],
-      "credentials": {
-        "postgres": "PostgreSQL Credentials"
-      }
-    },
-    {
-      "parameters": {
-        "functionCode": "// Full implementation: see n8n/transform.js\n// Paste the contents of transform.js here when importing to n8n"
-      },
-      "id": "function-transform",
-      "name": "Transform Data",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [650, 300]
-    },
-    {
-      "parameters": {
-        "channel": "#business-kpis",
-        "text": "={{ $json.message }}"
-      },
-      "id": "slack-send",
-      "name": "Send Slack Message",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 1,
-      "position": [850, 300],
-      "credentials": {
-        "slackApi": "Slack Webhook"
-      }
+      "id": "code-transform",
+      "name": "Fetch & Transform & Send",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
     }
   ],
   "connections": {
@@ -90,61 +34,7 @@
       "main": [
         [
           {
-            "node": "PostgreSQL - Yesterday KPIs",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "PostgreSQL - Last Week KPIs",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "PostgreSQL - Top Products",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PostgreSQL - Yesterday KPIs": {
-      "main": [
-        [
-          {
-            "node": "Transform Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PostgreSQL - Last Week KPIs": {
-      "main": [
-        [
-          {
-            "node": "Transform Data",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "PostgreSQL - Top Products": {
-      "main": [
-        [
-          {
-            "node": "Transform Data",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Transform Data": {
-      "main": [
-        [
-          {
-            "node": "Send Slack Message",
+            "node": "Fetch & Transform & Send",
             "type": "main",
             "index": 0
           }

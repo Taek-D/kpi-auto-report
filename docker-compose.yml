@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: kpi-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-changeme}
+      - N8N_HOST=localhost
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=Asia/Seoul
+      - TZ=Asia/Seoul
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - N8N_ALLOW_ENV_IN_NODE=SUPABASE_ANON_KEY,SUPABASE_URL
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - n8n-net
+
+networks:
+  n8n-net:
+    enable_ipv6: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.28.0.0/16"
+        - subnet: "fd00:dead:beef::/48"
+
+volumes:
+  n8n_data:
