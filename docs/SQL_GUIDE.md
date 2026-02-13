@@ -25,40 +25,43 @@
 ## 📊 Query 1: kpis_yesterday.sql
 
 ### 목적
-어제 날짜의 핵심 KPI(매출, 주문 수, AOV 등)를 집계합니다.
+어제 날짜의 핵심 KPI(매출, 주문 수, AOV, 전환율 등)를 조회합니다.
 
 ### 쿼리 구조
 
 ```sql
-WITH yesterday_kpis AS (
-    SELECT 
-        order_date,
-        COUNT(DISTINCT order_id) AS total_orders,
-        SUM(order_amount) AS total_revenue,
-        ROUND(SUM(order_amount) / NULLIF(COUNT(DISTINCT order_id), 0), 2) AS avg_order_value,
-        SUM(quantity) AS total_units_sold
-    FROM orders
-    WHERE order_date = CURRENT_DATE - INTERVAL '1 day'
-    GROUP BY order_date
-)
-SELECT * FROM yesterday_kpis;
+SELECT
+    sale_date AS order_date,
+    orders AS total_orders,
+    revenue AS total_revenue,
+    CASE
+        WHEN orders > 0 THEN ROUND(revenue::DECIMAL / orders, 2)
+        ELSE 0
+    END AS avg_order_value,
+    quantity_sold AS total_units_sold,
+    COALESCE(visitors, 0) AS total_visitors,
+    COALESCE(conversion_rate, 0.00) AS conversion_rate
+FROM daily_sales
+WHERE sale_date = CURRENT_DATE - INTERVAL '1 day';
 ```
+
+**데이터 소스**: `daily_sales` 테이블 (Supabase)
 
 ### 핵심 포인트
 
-#### 1. `NULLIF` 사용 이유
+#### 1. `CASE WHEN` AOV 계산
 ```sql
-ROUND(SUM(order_amount) / NULLIF(COUNT(DISTINCT order_id), 0), 2)
+CASE WHEN orders > 0 THEN ROUND(revenue::DECIMAL / orders, 2) ELSE 0 END
 ```
 - **문제**: 주문이 0건이면 `0으로 나누기` 에러 발생
-- **해결**: `NULLIF(COUNT(...), 0)` → 0이면 NULL 반환 → 결과도 NULL (에러 방지)
+- **해결**: `CASE WHEN`으로 0 방지, `::DECIMAL` 캐스팅으로 정밀도 확보
 
-#### 2. `DISTINCT` 사용
+#### 2. `COALESCE` NULL 처리
 ```sql
-COUNT(DISTINCT order_id)
+COALESCE(visitors, 0) AS total_visitors
 ```
-- **이유**: 동일 주문이 여러 행에 나타날 수 있음 (여러 상품 포함)
-- **효과**: 중복 제거하여 정확한 주문 수 계산
+- **이유**: 방문자/전환율이 NULL일 수 있음 (데이터 미수집 날짜)
+- **효과**: NULL → 0으로 기본값 제공
 
 #### 3. `CURRENT_DATE - INTERVAL '1 day'`
 - **장점**: 하드코딩 방지, 자동으로 어제 날짜 계산
@@ -68,11 +71,11 @@ COUNT(DISTINCT order_id)
 
 ```sql
 -- 인덱스 추가 (한 번만 실행)
-CREATE INDEX idx_orders_date ON orders(order_date);
+CREATE INDEX idx_daily_sales_date ON daily_sales(sale_date);
 ```
 
-**Before**: 전체 테이블 스캔 (10초)  
-**After**: 인덱스 스캔 (0.5초)
+**Before**: 전체 테이블 스캔 (느림)
+**After**: 인덱스 스캔 (빠름)
 
 ---
 
@@ -81,10 +84,12 @@ CREATE INDEX idx_orders_date ON orders(order_date);
 ### 목적
 지난주 동일 요일의 KPI를 조회하여 WoW 비교 기준 데이터를 제공합니다.
 
+**데이터 소스**: `daily_sales` 테이블 (Supabase) — Query 1과 동일 구조
+
 ### 핵심 로직
 
 ```sql
-WHERE order_date = CURRENT_DATE - INTERVAL '8 days'
+WHERE sale_date = CURRENT_DATE - INTERVAL '8 days'
 ```
 
 **왜 8일?**
@@ -106,30 +111,37 @@ const wowRevenue = ((yesterday.revenue - lastweek.revenue) / lastweek.revenue) *
 ### 목적
 어제 날짜 기준 매출 상위 3개 제품을 순위와 함께 조회합니다.
 
-### 쿼리 구조 (3단계 CTE)
+### 쿼리 구조 (CTE + Window Functions)
+
+**데이터 소스**: `product_sales` + `products` 테이블 (Supabase)
 
 ```sql
--- Step 1: 제품별 매출 집계
-WITH product_sales AS (
-    SELECT 
-        product_name,
-        SUM(order_amount) AS total_revenue,
-        SUM(quantity) AS units_sold
-    FROM orders
-    WHERE order_date = CURRENT_DATE - INTERVAL '1 day'
-    GROUP BY product_name
-),
+WITH ranked_products AS (
+    SELECT
+        p.product_name,
+        ps.revenue AS total_revenue,
+        ps.quantity_sold AS units_sold,
+        ps.orders AS order_count,
 
--- Step 2: 순위 계산 및 비중 산출
-ranked_products AS (
-    SELECT 
-        *,
-        RANK() OVER (ORDER BY total_revenue DESC) AS revenue_rank,
-        ROUND((total_revenue / SUM(total_revenue) OVER ()) * 100, 2) AS revenue_share_pct
-    FROM product_sales
+        -- 평균 단가
+        CASE
+            WHEN ps.quantity_sold > 0 THEN ROUND(ps.revenue::DECIMAL / ps.quantity_sold, 2)
+            ELSE 0
+        END AS avg_unit_price,
+
+        -- Window Function: 매출 기준 순위
+        RANK() OVER (ORDER BY ps.revenue DESC) AS revenue_rank,
+
+        -- 매출 비중 계산
+        ROUND(
+            (ps.revenue::DECIMAL / NULLIF(SUM(ps.revenue) OVER (), 0)) * 100, 2
+        ) AS revenue_share_pct
+
+    FROM product_sales ps
+    JOIN products p ON p.product_id = ps.product_id
+    WHERE ps.revenue > 0
 )
 
--- Step 3: 상위 3개만 필터링
 SELECT * FROM ranked_products
 WHERE revenue_rank <= 3
 ORDER BY revenue_rank;
@@ -236,18 +248,15 @@ WHERE order_date >= '2026-02-01';
 
 ```sql
 -- 필수 인덱스
-CREATE INDEX idx_orders_date ON orders(order_date);
-CREATE INDEX idx_orders_product ON orders(product_id, order_date);
-
--- 복합 인덱스 (커버링 인덱스)
-CREATE INDEX idx_orders_date_amount ON orders(order_date, order_amount);
+CREATE INDEX idx_daily_sales_date ON daily_sales(sale_date);
+CREATE INDEX idx_product_sales_revenue ON product_sales(revenue DESC);
 ```
 
 ### 2. EXPLAIN ANALYZE 활용
 
 ```sql
 EXPLAIN ANALYZE
-SELECT COUNT(*) FROM orders WHERE order_date = '2026-02-12';
+SELECT * FROM daily_sales WHERE sale_date = '2026-02-12';
 ```
 
 **읽는 법:**

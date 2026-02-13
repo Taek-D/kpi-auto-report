@@ -10,6 +10,9 @@
 docs/.bkit-memory.json
 docs/.pdca-snapshots/
 
+# Node
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db

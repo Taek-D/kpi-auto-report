@@ -7,7 +7,7 @@ n8n 기반 E-commerce KPI 자동 리포트 시스템. 매일 아침 PostgreSQL�
 ## Tech Stack
 
 - **Database**: PostgreSQL (Supabase)
-- **Workflow**: n8n (JSON workflow + JavaScript Function Node)
+- **Workflow**: n8n (JSON workflow + JavaScript Code Node)
 - **Messaging**: Slack API (Incoming Webhooks)
 - **Query Language**: SQL (Window Functions, CTEs)
 
@@ -22,8 +22,9 @@ KPI_Auto_Report(Athome)/
 │   ├── kpis_last_week.sql  # 지난주 동일 요일 KPI (WoW 비교용)
 │   └── top_products.sql    # 매출 상위 3개 제품
 ├── n8n/                    # n8n 워크플로우
-│   ├── workflow.json       # 워크플로우 정의 (import용)
-│   └── transform.js        # Function Node 로직 (WoW 계산, 이상 탐지, Slack 포맷팅)
+│   ├── workflow.json       # 7노드 워크플로우 정의 (import용)
+│   ├── transform.js        # Code Node 로직 (WoW 계산, 이상 탐지, 메시지 포맷팅)
+│   └── slack_send.js       # Code Node 로직 (Slack Webhook 전송)
 ├── docs/                   # 문서
 │   ├── SETUP.md
 │   ├── SQL_GUIDE.md
@@ -41,7 +42,7 @@ KPI_Auto_Report(Athome)/
 - NULLIF로 나눗셈 0 방지: `SUM(a) / NULLIF(COUNT(b), 0)`
 - 한글 주석으로 쿼리 목적 명시
 
-## JavaScript Conventions (n8n Function Node)
+## JavaScript Conventions (n8n Code Node)
 
 - n8n 입력: `$input.all()[index].json` 형식
 - 반환: `{ json: { ... } }` 형식
@@ -66,8 +67,13 @@ KPI_Auto_Report(Athome)/
 ## Data Flow
 
 ```
-Cron (08:00) -> PostgreSQL (3 queries parallel) -> JS Transform -> Slack Message
+Schedule (08:00)
+  ├─► Supabase RPC: get_kpis_yesterday()   ──┐
+  ├─► Supabase RPC: get_kpis_last_week()   ──┼─► Merge (Append) ─► WoW Analysis Code ─► Slack Send Code
+  └─► Supabase RPC: get_top_products()     ──┘
 ```
+
+**7개 노드**: Schedule Trigger → 3x HTTP Request (Supabase RPC, 병렬) → Merge → Code (WoW 분석) → Code (Slack 전송)
 
 ## Testing
 
@@ -77,7 +83,10 @@ Cron (08:00) -> PostgreSQL (3 queries parallel) -> JS Transform -> Slack Message
 
 ## Important Notes
 
-- 환경변수로 관리: DB 자격증명, Slack Webhook URL
-- queries/ 의 SQL 파일은 n8n PostgreSQL Node에서 참조
-- transform.js는 n8n Function Node에 붙여넣어 사용
+- Supabase REST API (RPC)로 데이터 조회 (직접 PostgreSQL 연결 아님)
+- Supabase anon key는 workflow.json에 포함 (public key)
+- Slack Webhook URL은 slack_send.js에서 직접 설정 (n8n UI에서 교체)
+- transform.js는 n8n "WoW Analysis & Anomaly Detection" Code Node에 붙여넣기
+- slack_send.js는 n8n "Slack: Send KPI Alert" Code Node에 붙여넣기
 - workflow.json은 n8n에 import하여 사용
+- n8n Code Node v2 sandbox 제한: `process.env`, `$env` 사용 불가
