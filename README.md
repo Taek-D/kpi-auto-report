@@ -493,6 +493,35 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - A/B 테스트 통계 분석 파이프라인 구축 (실험 설계 → 검정 → 효과 크기 → Go/No-Go 의사결정)
 - 분석 결과를 구체적 액션 아이템(광고비 증액, 딜 등록, 리타게팅)으로 변환
 
+## 보안 점검 (Security Audit)
+
+OWASP Top 10 기준 보안 취약점 점검을 수행했습니다 (2026-02-15).
+
+### 점검 결과 요약
+
+| 항목 | 판정 | 근거 |
+|------|------|------|
+| SQL Injection | **PASS** | RPC 함수 6개 모두 PL/pgSQL 파라미터 바인딩, 동적 SQL 없음 |
+| XSS | **PASS** | Slack mrkdwn 렌더링, 사용자 입력 미포함, `eval()` 미사용 |
+| 인증 우회 | **PASS** | CLI 전용 파이프라인, argparse choices 제한 |
+| 시크릿 관리 | **FIXED** | workflow.json JWT 하드코딩 → 플레이스홀더 교체 완료 |
+| TLS 설정 | **FIXED** | `NODE_TLS_REJECT_UNAUTHORIZED=0` 제거 (MITM 방어) |
+| RPC 입력 검증 | **FIXED** | `ALLOWED_RPC_FUNCTIONS` 화이트리스트 추가 (Path Traversal 방지) |
+
+### 수정 이력
+
+- `n8n/workflow.json`: Supabase JWT 토큰 8곳 → `YOUR_SUPABASE_ANON_KEY` 플레이스홀더 교체
+- `docker-compose.yml`: `NODE_TLS_REJECT_UNAUTHORIZED=0` 제거
+- `crawlers/supabase_loader.py`: RPC 함수명 화이트리스트 검증 추가
+
+### 남은 권장 사항
+
+- Supabase RLS (Row Level Security) 정책 활성화
+- `requirements.txt` 버전 상한 추가 (`requests>=2.31.0,<3.0.0`)
+- CI/CD에 `pip-audit` 통합 (의존성 취약점 자동 스캔)
+
+> 상세 보안 리포트: `docs/02-design/security-spec.md`
+
 ## 향후 계획
 
 - [x] Supabase 테이블/RPC 함수 생성 + 샘플 데이터 적재
@@ -504,6 +533,8 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - [x] 비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴, 액션 추천)
 - [x] A/B 테스트 통계 분석 파이프라인 (실험 설계 → 가설 검정 → Go/No-Go)
 - [x] 경쟁사 8주 장기 추이 데이터 (가격 할인/복원 패턴 반영)
+- [x] 보안 점검 (OWASP Top 10 기준, SQL Injection/XSS/시크릿 관리)
+- [ ] Supabase RLS 정책 활성화
 - [ ] Tableau/Looker Studio 대시보드 연동
 
 ## 라이선스
