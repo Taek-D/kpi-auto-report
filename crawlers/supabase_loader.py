@@ -17,6 +17,7 @@ ALLOWED_RPC_FUNCTIONS = {
     "get_brand_kpis_last_week",
     "get_top_products",
     "get_competitor_changes",
+    "get_trend_sales_correlation",
 }
 
 
@@ -212,3 +213,66 @@ class SupabaseLoader:
         except requests.RequestException as e:
             logger.error(f"[Supabase] A/B 테스트 데이터 조회 실패: {e}")
             return []
+
+    def fetch_search_trends(self, days: int = 30) -> list[dict]:
+        """search_trends 테이블에서 최근 N일 데이터 조회 (트렌드 분석용)"""
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return []
+
+        endpoint = f"{self.url}/rest/v1/search_trends"
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+        }
+        params = {
+            "select": "*",
+            "order": "trend_date.desc,brand,source",
+            "limit": days * 16,  # 8 product_groups x 2 sources x days
+        }
+
+        try:
+            response = requests.get(endpoint, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"[Supabase] search_trends {len(data)}건 조회 완료")
+            return data
+        except requests.RequestException as e:
+            logger.error(f"[Supabase] search_trends 조회 실패: {e}")
+            return []
+
+    def upsert_trends(self, records: list[dict]) -> dict:
+        """search_trends 테이블에 upsert (배치 처리)
+
+        Returns:
+            dict: {"success": int, "failed": int, "total": int}
+        """
+        if not self.url or not self.key:
+            logger.error("[Supabase] API 키가 설정되지 않았습니다.")
+            return {"success": 0, "failed": len(records), "total": len(records)}
+
+        endpoint = f"{self.url}/rest/v1/search_trends"
+        stats = {"success": 0, "failed": 0, "total": len(records)}
+
+        for i in range(0, len(records), BATCH_SIZE):
+            batch = records[i : i + BATCH_SIZE]
+            batch_num = i // BATCH_SIZE + 1
+            try:
+                response = requests.post(
+                    endpoint,
+                    headers=self._get_headers(),
+                    json=batch,
+                    timeout=15,
+                )
+                response.raise_for_status()
+                stats["success"] += len(batch)
+                logger.info(f"[Supabase] 트렌드 배치 {batch_num}: {len(batch)}건 적재 성공")
+            except requests.RequestException as e:
+                stats["failed"] += len(batch)
+                logger.error(f"[Supabase] 트렌드 배치 {batch_num} 적재 실패: {e}")
+
+        logger.info(
+            f"[Supabase] 트렌드 적재 완료 - 성공: {stats['success']}, "
+            f"실패: {stats['failed']}, 전체: {stats['total']}"
+        )
+        return stats

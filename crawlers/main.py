@@ -12,6 +12,8 @@ Usage:
     python -m crawlers.main --insight          # 비즈니스 인사이트 분석
     python -m crawlers.main --abtest           # A/B 테스트 분석
     python -m crawlers.main --forecast         # ML 매출 예측
+    python -m crawlers.main --trend-collect    # 검색 트렌드 수집 (Google Trends + Naver DataLab)
+    python -m crawlers.main --trend            # 트렌드-매출 상관 분석 + 차트
 """
 
 import argparse
@@ -147,6 +149,26 @@ def forecast() -> None:
     print(result)
 
 
+def trend_collect() -> None:
+    """검색 트렌드 수집 (Google Trends + Naver DataLab)"""
+    from .trend_collector import TrendCollector
+
+    logger.info("=" * 40 + " 트렌드 수집 " + "=" * 40)
+    collector = TrendCollector()
+    result = collector.run()
+    print(result)
+
+
+def trend() -> None:
+    """트렌드-매출 상관 분석"""
+    from .trend_analyzer import TrendAnalyzer
+
+    logger.info("=" * 40 + " 트렌드 분석 " + "=" * 40)
+    analyzer = TrendAnalyzer()
+    result = analyzer.run()
+    print(result)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="앳홈 경쟁사 크롤링 & 분석 파이프라인",
@@ -162,6 +184,8 @@ Examples:
   python -m crawlers.main --insight               비즈니스 인사이트 분석
   python -m crawlers.main --abtest                A/B 테스트 분석
   python -m crawlers.main --forecast              ML 매출 예측
+  python -m crawlers.main --trend-collect          검색 트렌드 수집
+  python -m crawlers.main --trend                  트렌드-매출 상관 분석
         """,
     )
     parser.add_argument("--all", action="store_true", help="전체 파이프라인 실행 (크롤링+적재+분석)")
@@ -172,10 +196,12 @@ Examples:
     parser.add_argument("--insight", action="store_true", help="비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴)")
     parser.add_argument("--abtest", action="store_true", help="A/B 테스트 분석 (통계 검정 + 비즈니스 해석)")
     parser.add_argument("--forecast", action="store_true", help="ML 매출 예측 (Random Forest + Feature Importance)")
+    parser.add_argument("--trend-collect", action="store_true", help="검색 트렌드 수집 (Google Trends + Naver DataLab)")
+    parser.add_argument("--trend", action="store_true", help="트렌드-매출 상관 분석 (Pearson/Spearman + 선행 지표 + 성수기)")
 
     args = parser.parse_args()
 
-    if not any([args.all, args.crawl, args.analyze, args.report, args.insight, args.abtest, args.forecast]):
+    if not any([args.all, args.crawl, args.analyze, args.report, args.insight, args.abtest, args.forecast, args.trend_collect, args.trend]):
         parser.print_help()
         sys.exit(1)
 
@@ -208,6 +234,14 @@ Examples:
     # ML 매출 예측
     if args.forecast:
         forecast()
+
+    # 검색 트렌드 수집
+    if args.trend_collect:
+        trend_collect()
+
+    # 트렌드-매출 상관 분석
+    if args.trend:
+        trend()
 
     logger.info("파이프라인 완료")
 

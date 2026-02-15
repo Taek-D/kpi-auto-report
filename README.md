@@ -58,7 +58,8 @@
 - **비즈니스 인사이트 분석**: 채널 믹스 변동, 경쟁사-매출 상관, 요일별 패턴, 액션 추천
 - **A/B 테스트 통계 분석**: 실험 설계 검증 → 가설 검정(t-test, Mann-Whitney U) → Cohen's d → ROI/Go-No-Go 의사결정
 - **ML 매출 예측**: scikit-learn Random Forest 기반 브랜드별 매출 예측 (R²=0.74, MAPE=3.9%)
-- **데이터 시각화**: matplotlib/seaborn 기반 11종 분석 차트 자동 생성
+- **검색 트렌드-매출 상관 분석**: Google Trends + Naver DataLab 검색량 수집 → Pearson/Spearman 상관, 선행 지표(lead-lag), 성수기 탐지
+- **데이터 시각화**: matplotlib/seaborn 기반 15종 분석 차트 자동 생성
 - **주간/월간 요약 리포트**: Supabase RPC → Pandas → 브랜드별 WoW/MoM 변화율 + 채널 비중 분석
 - **n8n-크롤러 연동**: Execute Command 노드로 Python 크롤링 자동 실행 + Slack 결과 알림
 
@@ -115,7 +116,8 @@
 | Analysis | Python (Pandas) | 경쟁사 데이터 전처리 + WoW 분석 |
 | Statistics | Python (scipy) | A/B 테스트 통계 검정 파이프라인 (Power Analysis → t-test → Mann-Whitney U → Cohen's d) |
 | ML | Python (scikit-learn) | 매출 예측 (Random Forest, Feature Engineering, Cross Validation) |
-| Visualization | Python (matplotlib + seaborn) | 11종 분석 차트 자동 생성 |
+| Trend Data | Python (pytrends + Naver DataLab API) | Google Trends / Naver 검색 트렌드 수집 |
+| Visualization | Python (matplotlib + seaborn) | 15종 분석 차트 자동 생성 |
 
 ## 프로젝트 구조
 
@@ -135,6 +137,8 @@ KPI_Auto_Report(Athome)/
 │   ├── insight_analyzer.py     # 비즈니스 인사이트 (채널 믹스, 경쟁사 상관, 요일 패턴)
 │   ├── ab_test_analyzer.py     # A/B 테스트 통계 분석 파이프라인 (scipy)
 │   ├── demand_forecaster.py    # ML 매출 예측 (scikit-learn Random Forest)
+│   ├── trend_collector.py      # 검색 트렌드 수집 (Google Trends + Naver DataLab)
+│   ├── trend_analyzer.py       # 트렌드-매출 상관 분석 + 차트 4종
 │   └── main.py                 # CLI 진입점 (argparse)
 ├── schema/                     # DB 스키마 DDL + 샘플 데이터 + RPC 함수
 │   ├── brand_daily_sales.sql   # 브랜드x채널 일일 매출 + RPC 2개
@@ -142,6 +146,7 @@ KPI_Auto_Report(Athome)/
 │   ├── market_competitors.sql  # 경쟁사 크롤링 데이터 + RPC 1개
 │   ├── competitor_extended.sql # 경쟁사 8주 확장 데이터 (장기 추이 분석)
 │   ├── ab_test_sample.sql      # A/B 테스트 시뮬레이션 데이터 (14일)
+│   ├── search_trends.sql       # 검색 트렌드 테이블 + 샘플 30일 + RPC 함수
 │   ├── summary_functions.sql   # 주간/월간 요약 RPC 함수 2개
 ├── queries/                    # SQL 쿼리 원본 (학습/문서용)
 │   ├── brand_kpis_yesterday.sql # 브랜드별 어제 KPI + 채널 비중
@@ -166,7 +171,11 @@ KPI_Auto_Report(Athome)/
 │   ├── ab_test_conversion.png  # A/B 전환율 비교 + 신뢰구간
 │   ├── ab_test_daily.png       # A/B 일별 전환율 추이
 │   ├── forecast_actual_vs_pred.png  # ML 실제 vs 예측 매출 비교
-│   └── forecast_feature_importance.png # ML Feature Importance Top 10
+│   ├── forecast_feature_importance.png # ML Feature Importance Top 10
+│   ├── trend_sales_overlay.png     # 트렌드 vs 매출 듀얼축 라인 (1x3 브랜드별)
+│   ├── trend_correlation_heatmap.png # 트렌드-매출 상관 히트맵 (Pearson r)
+│   ├── trend_lead_lag.png          # 선행 지표 lag별 상관계수 바차트
+│   └── trend_peak_season.png       # 성수기 트렌드 area + 피크 구간 강조
 ├── docs/
 │   ├── SETUP.md                # 설치/설정 가이드
 │   ├── SQL_GUIDE.md            # SQL 쿼리 상세 가이드
@@ -198,6 +207,7 @@ Supabase SQL Editor에서 순서대로 실행:
 1. schema/products.sql
 2. schema/brand_daily_sales.sql
 3. schema/market_competitors.sql
+4. schema/search_trends.sql
 ```
 
 ### 4. 워크플로우 설정
@@ -218,6 +228,7 @@ SELECT * FROM get_top_products();
 SELECT * FROM get_competitor_changes();
 
 -- 주간/월간 요약
+SELECT * FROM get_trend_sales_correlation(30);
 SELECT * FROM get_weekly_summary('2026-02-12'::date);
 SELECT * FROM get_monthly_summary(2026, 2);
 ```
@@ -258,6 +269,12 @@ python -m crawlers.main --abtest
 
 # ML 매출 예측 (Random Forest + Feature Importance + 브랜드별 예측)
 python -m crawlers.main --forecast
+
+# 검색 트렌드 수집 (Google Trends + Naver DataLab, API 키 필요)
+python -m crawlers.main --trend-collect
+
+# 트렌드-매출 상관 분석 (Pearson/Spearman + 선행 지표 + 성수기 탐지)
+python -m crawlers.main --trend
 ```
 
 ### 크롤링 대상
@@ -269,7 +286,7 @@ python -m crawlers.main --forecast
 | 소형건조기 | 쿠팡, 네이버 | 순위, 가격, 리뷰 수, 평점 |
 | 뷰티디바이스 | 쿠팡, 네이버 | 순위, 가격, 리뷰 수, 평점 |
 
-### 시각화 차트 (11종)
+### 시각화 차트 (15종)
 
 | 구분 | 차트 | 파일명 | 설명 |
 |------|------|--------|------|
@@ -284,6 +301,10 @@ python -m crawlers.main --forecast
 | A/B 테스트 | 일별 추이 | `ab_test_daily.png` | A vs B 일별 전환율 라인 차트 |
 | ML 예측 | 실제 vs 예측 | `forecast_actual_vs_pred.png` | 브랜드별 실제/예측 매출 bar+line |
 | ML 예측 | Feature Importance | `forecast_feature_importance.png` | Top 10 feature 중요도 수평 bar |
+| 트렌드 | 트렌드 vs 매출 | `trend_sales_overlay.png` | 듀얼축 라인 (1x3 브랜드별) |
+| 트렌드 | 상관 히트맵 | `trend_correlation_heatmap.png` | 브랜드 x 소스 Pearson r |
+| 트렌드 | 선행 지표 | `trend_lead_lag.png` | lag별 상관계수 바차트 |
+| 트렌드 | 성수기 탐지 | `trend_peak_season.png` | 트렌드 area + 피크 구간 강조 |
 
 > 차트에서 주황색 = 미닉스, 파란색 = 톰, 초록색 = 프로티원으로 구분됩니다.
 
@@ -311,7 +332,7 @@ Supabase RPC 함수를 통해 브랜드별 집계 데이터를 조회하고, Pan
 - 전월 대비 MoM 변화율 (%)
 - `output/monthly_report.png` 차트 자동 생성
 
-### RPC 함수 (6개)
+### RPC 함수 (7개)
 
 | 함수 | 용도 | 반환 |
 |------|------|------|
@@ -319,6 +340,7 @@ Supabase RPC 함수를 통해 브랜드별 집계 데이터를 조회하고, Pan
 | `get_brand_kpis_last_week()` | 지난주 동일 요일 KPI | WoW 비교용 |
 | `get_top_products()` | 매출 상위 5개 제품 | 제품명, 매출, 평점 |
 | `get_competitor_changes()` | 경쟁사 순위/가격 변동 | 전주 대비 변동 |
+| `get_trend_sales_correlation(p_days)` | 트렌드-매출 상관 데이터 | 브랜드별 트렌드+매출 JOIN |
 | `get_weekly_summary(p_end_date)` | 주간 브랜드별 집계 | WoW%, 채널 비중 JSONB |
 | `get_monthly_summary(p_year, p_month)` | 월간 브랜드별 집계 | MoM%, 채널 비중 JSONB |
 
@@ -432,6 +454,51 @@ Supabase RPC 함수를 통해 브랜드별 집계 데이터를 조회하고, Pan
 - 예측 대비 실적 하회 시 이상 탐지 (예측 기반 동적 임계값)
 - 채널별 예측 매출로 광고 예산 사전 배분 최적화
 
+## 검색 트렌드-매출 상관 분석
+
+`--trend` 옵션으로 Google Trends / Naver DataLab 검색 트렌드와 내부 매출 데이터의 상관 분석을 수행합니다. `--trend-collect`로 실제 API 데이터를 수집하거나, 샘플 데이터(30일)로 바로 분석할 수 있습니다.
+
+> Data Mart Presentation의 "외부 검색 트렌드 x 내부 매출 상관 분석" 아키텍처를 실제 구현한 모듈입니다.
+
+### 분석 항목
+
+| 분석 | 방법 | 인사이트 예시 |
+|------|------|-------------|
+| 상관 분석 | Pearson/Spearman per brand per source | "미닉스 x Google r=0.72 (강한 양의 상관)" |
+| 선행 지표 | lag -7~+7일 cross-correlation | "검색이 매출보다 3일 선행 (r=0.68)" |
+| 성수기 탐지 | 75th percentile 초과 기간 | "02/01~02/05 설 연휴 성수기 (5일)" |
+| 비즈니스 추천 | 상관/선행/성수기 결합 | "검색량 급증 시 3일 후 프로모션 준비" |
+
+### 데이터 소스
+
+| 소스 | 방법 | 비고 |
+|------|------|------|
+| Google Trends | pytrends 라이브러리 | 5개씩 배치, 2초 딜레이, 실패 시 graceful skip |
+| Naver DataLab | REST API (검색어 트렌드) | Client ID/Secret 필요, 5개 keywordGroups/요청 |
+
+### 출력 예시
+
+```
+📈 검색 트렌드-매출 상관 분석
+
+📊 상관 분석 (검색 트렌드 vs 매출)
+  [미닉스 x Google Trends] Pearson r=0.721**, Spearman r=0.685 (n=7)
+  [톰 x Naver DataLab] Pearson r=0.534*, Spearman r=0.498 (n=7)
+
+⏱️ 선행 지표 분석
+  [미닉스] 검색이 매출보다 3일 선행 (r=0.684)
+  [프로티원] 동시 상관 최대 (lag=0, r=0.512)
+
+🔥 성수기 탐지
+  [미닉스] 02/01~02/05 (5일) 평균 트렌드 78.3
+  [톰] 01/20~01/23 (4일) 평균 트렌드 65.1
+
+🎯 비즈니스 액션 추천
+  1. [광고] 미닉스: Google Trends 검색량과 매출 강한 상관 → 트렌드 상승 시 광고비 증액
+  2. [타이밍] 미닉스: 검색 3일 선행 → 검색량 급증 감지 시 프로모션 사전 준비
+  3. [재고] 미닉스: 02/01~02/05 성수기 → 해당 기간 재고 사전 확보
+```
+
 ## n8n 크롤링 워크플로우
 
 매주 월요일 07:00에 Python 크롤링 파이프라인을 자동 실행하는 n8n 워크플로우입니다.
@@ -482,6 +549,9 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - A/B 테스트 전체 분석 프로세스 설계: 실험 설계 검증 → 가설 검정 → 효과 크기 → 비즈니스 해석(ROI/Go-No-Go)
 - scikit-learn ML 파이프라인: Feature Engineering(Lag, Rolling, Encoding) → Random Forest → Cross Validation
 - Feature Importance 분석: 전주 동요일 매출(82.7%)이 예측 핵심 → 주간 패턴 중요성 확인
+- 외부 트렌드 데이터 연동: Google Trends (pytrends) + Naver DataLab REST API 수집 파이프라인
+- Cross-correlation 분석: lead-lag -7~+7일 시계열 상관 분석으로 선행 지표 탐지
+- 성수기 탐지: 75th percentile 기반 피크 구간 자동 식별
 - CLI 도구 설계 (argparse, 모듈별 실행, lazy import 패턴)
 - Window Function을 jsonb_agg() 안에서 직접 사용 불가 → 서브쿼리 패턴 학습
 
@@ -492,6 +562,7 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - 요일별 매출 패턴 분석 → 프로모션 타이밍 최적화
 - A/B 테스트 통계 분석 파이프라인 구축 (실험 설계 → 검정 → 효과 크기 → Go/No-Go 의사결정)
 - 분석 결과를 구체적 액션 아이템(광고비 증액, 딜 등록, 리타게팅)으로 변환
+- 검색 트렌드-매출 상관으로 "검색이 매출을 선행하는가?" 정량적 검증 → 프로모션 타이밍 최적화
 
 ## 보안 점검 (Security Audit)
 
@@ -526,7 +597,7 @@ OWASP Top 10 기준 보안 취약점 점검을 수행했습니다 (2026-02-15).
 
 - [x] Supabase 테이블/RPC 함수 생성 + 샘플 데이터 적재
 - [x] Python 크롤링 스크립트 (쿠팡/네이버 자동 크롤링)
-- [x] 데이터 시각화 (matplotlib/seaborn 11종 차트)
+- [x] 데이터 시각화 (matplotlib/seaborn 15종 차트)
 - [x] ML 매출 예측 (Random Forest, Feature Engineering, R²=0.74)
 - [x] 주간/월간 요약 리포트 (Supabase RPC + Pandas + WoW/MoM 분석)
 - [x] n8n에서 Python 크롤링 스크립트 연동 (Execute Command 노드)
@@ -534,6 +605,7 @@ OWASP Top 10 기준 보안 취약점 점검을 수행했습니다 (2026-02-15).
 - [x] A/B 테스트 통계 분석 파이프라인 (실험 설계 → 가설 검정 → Go/No-Go)
 - [x] 경쟁사 8주 장기 추이 데이터 (가격 할인/복원 패턴 반영)
 - [x] 보안 점검 (OWASP Top 10 기준, SQL Injection/XSS/시크릿 관리)
+- [x] 검색 트렌드-매출 상관 분석 (Google Trends + Naver DataLab, Pearson/Spearman, 선행 지표, 성수기 탐지)
 - [ ] Supabase RLS 정책 활성화
 - [ ] Tableau/Looker Studio 대시보드 연동
 
