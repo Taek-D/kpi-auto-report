@@ -252,6 +252,7 @@ class SupabaseLoader:
             return {"success": 0, "failed": len(records), "total": len(records)}
 
         endpoint = f"{self.url}/rest/v1/search_trends"
+        params = {"on_conflict": "trend_date,brand,product_group,keyword,source"}
         stats = {"success": 0, "failed": 0, "total": len(records)}
 
         for i in range(0, len(records), BATCH_SIZE):
@@ -261,6 +262,7 @@ class SupabaseLoader:
                 response = requests.post(
                     endpoint,
                     headers=self._get_headers(),
+                    params=params,
                     json=batch,
                     timeout=15,
                 )
