@@ -9,9 +9,9 @@ Usage:
     python -m crawlers.main --crawl --source coupang  # 쿠팡만 크롤링
     python -m crawlers.main --report weekly    # 주간 요약 리포트
     python -m crawlers.main --report monthly   # 월간 요약 리포트 + 차트
-    python -m crawlers.main --predict          # ML 매출 예측 분석
     python -m crawlers.main --insight          # 비즈니스 인사이트 분석
     python -m crawlers.main --abtest           # A/B 테스트 분석
+    python -m crawlers.main --forecast         # ML 매출 예측
 """
 
 import argparse
@@ -117,16 +117,6 @@ def report(report_type: str) -> None:
         logger.error(f"알 수 없는 리포트 유형: {report_type}")
 
 
-def predict() -> None:
-    """ML 매출 예측 분석"""
-    from .predictor import RevenuePredictor
-
-    logger.info("=" * 40 + " 매출 예측 분석 " + "=" * 40)
-    predictor = RevenuePredictor()
-    result = predictor.run(days=30)
-    print(result)
-
-
 def insight() -> None:
     """비즈니스 인사이트 분석"""
     from .insight_analyzer import InsightAnalyzer
@@ -147,6 +137,16 @@ def abtest() -> None:
     print(result)
 
 
+def forecast() -> None:
+    """ML 매출 예측"""
+    from .demand_forecaster import DemandForecaster
+
+    logger.info("=" * 40 + " ML 매출 예측 " + "=" * 40)
+    forecaster = DemandForecaster()
+    result = forecaster.run()
+    print(result)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="앳홈 경쟁사 크롤링 & 분석 파이프라인",
@@ -159,9 +159,9 @@ Examples:
   python -m crawlers.main --analyze               분석 + 시각화만
   python -m crawlers.main --report weekly         주간 요약 리포트
   python -m crawlers.main --report monthly        월간 요약 리포트 + 차트
-  python -m crawlers.main --predict               ML 매출 예측 분석
   python -m crawlers.main --insight               비즈니스 인사이트 분석
   python -m crawlers.main --abtest                A/B 테스트 분석
+  python -m crawlers.main --forecast              ML 매출 예측
         """,
     )
     parser.add_argument("--all", action="store_true", help="전체 파이프라인 실행 (크롤링+적재+분석)")
@@ -169,13 +169,13 @@ Examples:
     parser.add_argument("--analyze", action="store_true", help="Supabase 데이터 분석 + 시각화")
     parser.add_argument("--source", choices=["coupang", "naver"], help="특정 소스만 크롤링")
     parser.add_argument("--report", choices=["weekly", "monthly"], help="주간/월간 요약 리포트 생성")
-    parser.add_argument("--predict", action="store_true", help="ML 매출 예측 분석")
     parser.add_argument("--insight", action="store_true", help="비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴)")
     parser.add_argument("--abtest", action="store_true", help="A/B 테스트 분석 (통계 검정 + 비즈니스 해석)")
+    parser.add_argument("--forecast", action="store_true", help="ML 매출 예측 (Random Forest + Feature Importance)")
 
     args = parser.parse_args()
 
-    if not any([args.all, args.crawl, args.analyze, args.report, args.predict, args.insight, args.abtest]):
+    if not any([args.all, args.crawl, args.analyze, args.report, args.insight, args.abtest, args.forecast]):
         parser.print_help()
         sys.exit(1)
 
@@ -197,10 +197,6 @@ Examples:
     if args.report:
         report(args.report)
 
-    # ML 예측
-    if args.predict:
-        predict()
-
     # 인사이트 분석
     if args.insight:
         insight()
@@ -208,6 +204,10 @@ Examples:
     # A/B 테스트 분석
     if args.abtest:
         abtest()
+
+    # ML 매출 예측
+    if args.forecast:
+        forecast()
 
     logger.info("파이프라인 완료")
 

@@ -1,0 +1,90 @@
+{
+  "name": "앳홈 Weekly Crawler Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron-weekly",
+      "name": "Schedule: Weekly Mon 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /app && python -m crawlers.main --all",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "exec-crawler",
+      "name": "Execute: Python Crawler",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Execute Command stdout\nconst items = $input.all();\nconst stdout = items[0]?.json?.stdout || '';\nconst stderr = items[0]?.json?.stderr || '';\nconst exitCode = items[0]?.json?.exitCode ?? -1;\n\nconst result = {\n  exitCode,\n  crawlCount: 0,\n  loadSuccess: 0,\n  loadFailed: 0,\n  charts: [],\n  hasError: exitCode !== 0,\n};\n\nconst crawlMatch = stdout.match(/크롤링 완료: 총 (\\d+)건/);\nif (crawlMatch) result.crawlCount = parseInt(crawlMatch[1]);\n\nconst loadMatch = stdout.match(/성공 (\\d+)건 \\/ 실패 (\\d+)건/);\nif (loadMatch) {\n  result.loadSuccess = parseInt(loadMatch[1]);\n  result.loadFailed = parseInt(loadMatch[2]);\n}\n\nconst chartMatches = stdout.matchAll(/→ (.+\\.png)/g);\nfor (const m of chartMatches) {\n  result.charts.push(m[1]);\n}\n\nif (stderr) result.stderr = stderr.slice(-500);\n\nreturn [{ json: result }];"
+      },
+      "id": "code-parse",
+      "name": "Code: Parse Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Full implementation: see n8n/crawler_notify.js\n// Paste the contents of crawler_notify.js here when importing to n8n"
+      },
+      "id": "code-notify",
+      "name": "Code: Slack Notify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Schedule: Weekly Mon 07:00": {
+      "main": [
+        [
+          {
+            "node": "Execute: Python Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute: Python Crawler": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Result": {
+      "main": [
+        [
+          {
+            "node": "Code: Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

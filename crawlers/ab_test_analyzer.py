@@ -1,6 +1,9 @@
 """
-A/B 테스트 분석 모듈
-미닉스 자사몰 결제 페이지 개선 A/B 테스트 통계 분석
+A/B 테스트 통계 분석 모듈
+미닉스 자사몰 결제 페이지 개선 A/B 테스트 시나리오의 통계 검정 파이프라인.
+실험 설계(Power Analysis, SRM) → 가설 검정(Welch's t-test, Mann-Whitney U) →
+효과 크기(Cohen's d) → 비즈니스 해석(ROI, Go/No-Go) 전 과정을 구현.
+(시뮬레이션 데이터 기반 — 실무 적용 시 동일 파이프라인으로 운영 데이터 분석 가능)
 """
 
 import logging
@@ -36,7 +39,14 @@ _setup_korean_font()
 
 
 class ABTestAnalyzer:
-    """A/B 테스트 통계 분석기"""
+    """A/B 테스트 통계 분석 파이프라인
+
+    실무에서 A/B 테스트 수행 시 필요한 전체 분석 프로세스를 구현:
+    1. 실험 설계 검증: Power Analysis(최소 샘플), SRM(배분 편향)
+    2. 가설 검정: Welch's t-test(전환율), Mann-Whitney U(매출)
+    3. 효과 크기: Cohen's d + 95% 신뢰구간
+    4. 비즈니스 해석: ROI 분석 + Go/No-Go 의사결정 프레임워크
+    """
 
     def __init__(self):
         self.loader = SupabaseLoader()
@@ -54,6 +64,8 @@ class ABTestAnalyzer:
 
         lines = [
             "🧪 A/B 테스트 분석: 미닉스 자사몰 결제 페이지 개선",
+            "※ 시뮬레이션 데이터 기반 | 실무 동일 파이프라인 적용",
+            "   (Power Analysis → t-test/Mann-Whitney → Cohen's d → ROI → Go/No-Go)",
             "=" * 55,
             "",
             "📋 실험 개요",

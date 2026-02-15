@@ -2,7 +2,7 @@
 
 > **매일 아침, 앳홈 3개 브랜드의 KPI 리포트가 Slack으로 자동 도착합니다.**
 
-앳홈(미닉스/톰/프로티원) 브랜드별 매출을 수집하고, WoW 분석 + 이상 탐지 + 경쟁사 모니터링을 수행한 뒤 Slack으로 전송하는 자동화 파이프라인입니다. Python 크롤링 + Pandas 분석 + scikit-learn 매출 예측 + 시각화까지 포함한 풀스택 데이터 프로젝트입니다.
+앳홈(미닉스/톰/프로티원) 브랜드별 매출을 수집하고, WoW 분석 + 이상 탐지 + 경쟁사 모니터링을 수행한 뒤 Slack으로 전송하는 자동화 파이프라인입니다. Python 크롤링(requests+BS4) + Pandas 분석 + scipy 통계 검정 + 시각화까지 포함한 데이터 분석 프로젝트입니다.
 
 ## 시스템 아키텍처
 
@@ -56,8 +56,8 @@
 - **경쟁사 모니터링**: 쿠팡/네이버 순위 변동, 가격 변동 알림 (8주 추이)
 - **경쟁사 크롤링**: Python으로 쿠팡(BeautifulSoup) + 네이버 쇼핑(API) 자동 수집
 - **비즈니스 인사이트 분석**: 채널 믹스 변동, 경쟁사-매출 상관, 요일별 패턴, 액션 추천
-- **A/B 테스트 분석**: 실험 설계 검증 + 통계 검정(t-test, Mann-Whitney U) + ROI 해석
-- **매출 예측 + 비즈니스 액션**: Ridge Regression 예측 → 재고/마케팅/채널 전략 + 리스크 평가
+- **A/B 테스트 통계 분석**: 실험 설계 검증 → 가설 검정(t-test, Mann-Whitney U) → Cohen's d → ROI/Go-No-Go 의사결정
+- **ML 매출 예측**: scikit-learn Random Forest 기반 브랜드별 매출 예측 (R²=0.74, MAPE=3.9%)
 - **데이터 시각화**: matplotlib/seaborn 기반 11종 분석 차트 자동 생성
 - **주간/월간 요약 리포트**: Supabase RPC → Pandas → 브랜드별 WoW/MoM 변화율 + 채널 비중 분석
 - **n8n-크롤러 연동**: Execute Command 노드로 Python 크롤링 자동 실행 + Slack 결과 알림
@@ -113,8 +113,8 @@
 | Crawling | Python (requests + BeautifulSoup4) | 쿠팡 검색 결과 스크래핑 |
 | API Client | Python (requests + Naver API) | 네이버 쇼핑 검색 API |
 | Analysis | Python (Pandas) | 경쟁사 데이터 전처리 + WoW 분석 |
-| ML | Python (scikit-learn) | Ridge Regression 매출 예측 |
-| Statistics | Python (scipy) | A/B 테스트 통계 검정 (t-test, Mann-Whitney U) |
+| Statistics | Python (scipy) | A/B 테스트 통계 검정 파이프라인 (Power Analysis → t-test → Mann-Whitney U → Cohen's d) |
+| ML | Python (scikit-learn) | 매출 예측 (Random Forest, Feature Engineering, Cross Validation) |
 | Visualization | Python (matplotlib + seaborn) | 11종 분석 차트 자동 생성 |
 
 ## 프로젝트 구조
@@ -125,25 +125,24 @@ KPI_Auto_Report(Athome)/
 ├── docker-compose.yml          # n8n Docker 컨테이너 설정
 ├── .env.example                # 환경변수 템플릿
 ├── KPI_Auto_Report_PRD.md      # 제품 요구사항 문서 (v2)
-├── crawlers/                   # Python 경쟁사 크롤링 & 분석 & ML 패키지
+├── crawlers/                   # Python 경쟁사 크롤링 & 분석 패키지
 │   ├── config.py               # 크롤링 대상 설정 (제품, 카테고리, 브랜드 매핑)
 │   ├── coupang_crawler.py      # 쿠팡 검색 스크래핑 (requests + BeautifulSoup)
 │   ├── naver_crawler.py        # 네이버 쇼핑 API 클라이언트
 │   ├── supabase_loader.py      # Supabase REST API 데이터 적재 + RPC 호출
 │   ├── analyzer.py             # Pandas 분석 + matplotlib/seaborn 시각화
 │   ├── report_generator.py     # 주간/월간 요약 리포트 (Pandas + matplotlib)
-│   ├── predictor.py            # ML 매출 예측 + 비즈니스 액션 플랜
 │   ├── insight_analyzer.py     # 비즈니스 인사이트 (채널 믹스, 경쟁사 상관, 요일 패턴)
-│   ├── ab_test_analyzer.py     # A/B 테스트 통계 분석 (scipy)
+│   ├── ab_test_analyzer.py     # A/B 테스트 통계 분석 파이프라인 (scipy)
+│   ├── demand_forecaster.py    # ML 매출 예측 (scikit-learn Random Forest)
 │   └── main.py                 # CLI 진입점 (argparse)
 ├── schema/                     # DB 스키마 DDL + 샘플 데이터 + RPC 함수
 │   ├── brand_daily_sales.sql   # 브랜드x채널 일일 매출 + RPC 2개
 │   ├── products.sql            # 제품 마스터 + 제품별 매출 + RPC 1개
 │   ├── market_competitors.sql  # 경쟁사 크롤링 데이터 + RPC 1개
 │   ├── competitor_extended.sql # 경쟁사 8주 확장 데이터 (장기 추이 분석)
-│   ├── ab_test_sample.sql      # A/B 테스트 테이블 + 14일 샘플 데이터
+│   ├── ab_test_sample.sql      # A/B 테스트 시뮬레이션 데이터 (14일)
 │   ├── summary_functions.sql   # 주간/월간 요약 RPC 함수 2개
-│   └── sample_30days.sql       # 30일 샘플 데이터 (ML 학습용)
 ├── queries/                    # SQL 쿼리 원본 (학습/문서용)
 │   ├── brand_kpis_yesterday.sql # 브랜드별 어제 KPI + 채널 비중
 │   ├── brand_kpis_last_week.sql # 지난주 동일 요일 브랜드별 KPI
@@ -162,12 +161,12 @@ KPI_Auto_Report(Athome)/
 │   ├── review_growth.png       # 주간 리뷰 증가량
 │   ├── competitor_dashboard.png# 종합 대시보드 (2x2)
 │   ├── monthly_report.png      # 월간 브랜드별 매출 bar chart
-│   ├── revenue_prediction.png  # 실제 vs 예측 + 향후 7일 예측
-│   ├── brand_forecast.png      # 브랜드별 7일 예측 합계 bar chart
 │   ├── channel_mix_trend.png   # 채널 비중 변화 stacked area chart
 │   ├── weekday_heatmap.png     # 브랜드x요일 매출 히트맵
 │   ├── ab_test_conversion.png  # A/B 전환율 비교 + 신뢰구간
-│   └── ab_test_daily.png       # A/B 일별 전환율 추이
+│   ├── ab_test_daily.png       # A/B 일별 전환율 추이
+│   ├── forecast_actual_vs_pred.png  # ML 실제 vs 예측 매출 비교
+│   └── forecast_feature_importance.png # ML Feature Importance Top 10
 ├── docs/
 │   ├── SETUP.md                # 설치/설정 가이드
 │   ├── SQL_GUIDE.md            # SQL 쿼리 상세 가이드
@@ -251,14 +250,14 @@ python -m crawlers.main --crawl --source naver
 python -m crawlers.main --report weekly
 python -m crawlers.main --report monthly
 
-# ML 매출 예측 + 비즈니스 액션 플랜
-python -m crawlers.main --predict
-
 # 비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴)
 python -m crawlers.main --insight
 
-# A/B 테스트 분석 (통계 검정 + ROI + Go/No-Go 판정)
+# A/B 테스트 통계 분석 (실험 설계 검증 → 가설 검정 → Go/No-Go)
 python -m crawlers.main --abtest
+
+# ML 매출 예측 (Random Forest + Feature Importance + 브랜드별 예측)
+python -m crawlers.main --forecast
 ```
 
 ### 크롤링 대상
@@ -279,12 +278,12 @@ python -m crawlers.main --abtest
 | 경쟁사 | 리뷰 성장 | `review_growth.png` | 주간 리뷰 증가량 (그룹 바) |
 | 경쟁사 | 종합 대시보드 | `competitor_dashboard.png` | 2x2 서브플롯 전체 요약 |
 | 리포트 | 월간 리포트 | `monthly_report.png` | 브랜드별 월간 매출 bar chart |
-| ML | 매출 예측 | `revenue_prediction.png` | 실제 vs 예측 + 향후 7일 (±15% 범위) |
-| ML | 예측 합계 | `brand_forecast.png` | 브랜드별 7일 예측 매출 합계 bar chart |
 | 인사이트 | 채널 믹스 | `channel_mix_trend.png` | 브랜드별 채널 비중 stacked area chart |
 | 인사이트 | 요일 히트맵 | `weekday_heatmap.png` | 브랜드x요일 평균 매출 히트맵 |
 | A/B 테스트 | 전환율 비교 | `ab_test_conversion.png` | A/B 전환율 + 95% 신뢰구간 bar chart |
 | A/B 테스트 | 일별 추이 | `ab_test_daily.png` | A vs B 일별 전환율 라인 차트 |
+| ML 예측 | 실제 vs 예측 | `forecast_actual_vs_pred.png` | 브랜드별 실제/예측 매출 bar+line |
+| ML 예측 | Feature Importance | `forecast_feature_importance.png` | Top 10 feature 중요도 수평 bar |
 
 > 차트에서 주황색 = 미닉스, 파란색 = 톰, 초록색 = 프로티원으로 구분됩니다.
 
@@ -323,41 +322,6 @@ Supabase RPC 함수를 통해 브랜드별 집계 데이터를 조회하고, Pan
 | `get_weekly_summary(p_end_date)` | 주간 브랜드별 집계 | WoW%, 채널 비중 JSONB |
 | `get_monthly_summary(p_year, p_month)` | 월간 브랜드별 집계 | MoM%, 채널 비중 JSONB |
 
-## 매출 예측 + 비즈니스 액션 (ML)
-
-scikit-learn Ridge Regression으로 브랜드별 매출을 예측하고, **예측 결과를 비즈니스 의사결정으로 연결**합니다.
-
-### Feature Engineering
-
-| Feature | 설명 |
-|---------|------|
-| `day_of_week` | 요일 (0=월 ~ 6=일) |
-| `is_weekend` | 주말 여부 (0/1) |
-| `revenue_ma7` | 7일 이동평균 매출 |
-| `revenue_lag7` | 전주 동일 요일 매출 |
-
-### 파이프라인
-
-```
-Supabase (30일) → Feature Engineering → Ridge Regression (α=1.0)
-→ 7일 예측 → 비즈니스 액션 플랜 + 리스크 평가 → 시각화 2종
-```
-
-### 출력 예시
-
-```
-🎯 비즈니스 액션 플랜
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [미닉스]
-  [재고] 다음 주 예상 주문 171건 → 안전재고 대비 26건 여유 확보
-  [마케팅] 주말 매출 +25% 패턴 → 금/토 쿠팡 광고비 +30% 배분 권장
-  [채널] 쿠팡 매출 비중 40%+ → 쿠팡 로켓배송 재고 우선 확보
-
-⚠️ 리스크 평가
-  [참고] 미닉스 R²=0.75 → 중간 정확도, ±15% 버퍼 운영 권장
-  [주의] 톰 R²=0.43 → 예측 정확도 낮음, 보수적 재고 운영 (±20% 버퍼)
-```
-
 ## 비즈니스 인사이트 분석
 
 `--insight` 옵션으로 데이터 기반 "So What?" 분석을 수행합니다.
@@ -391,9 +355,11 @@ Supabase (30일) → Feature Engineering → Ridge Regression (α=1.0)
     톰 더글로우 프로: 5위 → 3위 (↑2)
 ```
 
-## A/B 테스트 분석
+## A/B 테스트 통계 분석
 
-`--abtest` 옵션으로 미닉스 자사몰 결제 페이지 A/B 테스트를 분석합니다.
+`--abtest` 옵션으로 미닉스 자사몰 결제 페이지 A/B 테스트의 전체 통계 분석 파이프라인을 실행합니다. 실험 설계 검증(Power Analysis, SRM)부터 가설 검정(Welch's t-test, Mann-Whitney U), 효과 크기(Cohen's d), 비즈니스 해석(ROI, Go/No-Go)까지 실무 동일 프로세스를 구현했습니다.
+
+> 시뮬레이션 데이터 기반이지만, 실무 운영 데이터 투입 시 동일 파이프라인으로 즉시 분석 가능한 구조입니다.
 
 ### 실험 설계
 
@@ -405,15 +371,16 @@ Supabase (30일) → Feature Engineering → Ridge Regression (α=1.0)
 | Treatment (B) | 개선 결제 페이지 (원클릭 결제 + 리뷰 위젯) |
 | 기간 | 14일 (2주, 요일 효과 포함) |
 
-### 통계 분석
+### 통계 분석 파이프라인
 
-| 검정 | 방법 | 용도 |
-|------|------|------|
-| 실험 설계 검증 | Power Analysis, SRM (chi-squared) | 샘플 충분성 + 배분 편향 체크 |
-| 전환율 비교 | Welch's t-test | 두 그룹 평균 차이 (비등분산) |
-| 매출 비교 | Mann-Whitney U test | 비정규 분포 대응 (단측) |
-| 효과 크기 | Cohen's d | 실질적 의미 판단 |
-| 신뢰구간 | 95% CI | 전환율 차이 범위 |
+| 단계 | 방법 | 용도 | 판정 기준 |
+|------|------|------|----------|
+| 1. 실험 설계 검증 | Power Analysis, SRM (chi-squared) | 샘플 충분성 + 배분 편향 체크 | power=0.8, p>0.05 |
+| 2. 전환율 비교 | Welch's t-test | 두 그룹 평균 차이 (비등분산) | p<0.05 |
+| 3. 매출 비교 | Mann-Whitney U test | 비정규 분포 대응 (단측) | p<0.05 |
+| 4. 효과 크기 | Cohen's d | 실질적 의미 판단 | d>0.2 (small) |
+| 5. 신뢰구간 | 95% CI | 전환율 차이 범위 | CI가 0 미포함 |
+| 6. 비즈니스 해석 | ROI + Go/No-Go | 의사결정 프레임워크 | ROI>100% |
 
 ### 출력 예시
 
@@ -430,6 +397,40 @@ Supabase (30일) → Feature Engineering → Ridge Regression (α=1.0)
   ROI: 15,591% (개발비 ₩500만 기준)
   의사결정: ✅ GO - 전체 트래픽 적용 권장
 ```
+
+## ML 매출 예측 (Demand Forecasting)
+
+`--forecast` 옵션으로 브랜드별 일일 매출을 학습하여 예측 모델을 구축합니다. Feature Engineering → 모델 학습(Random Forest) → 교차 검증 → Feature Importance 분석까지 ML 파이프라인 전체를 구현했습니다.
+
+> 시뮬레이션 데이터 기반이지만, 실무 운영 데이터 투입 시 동일 파이프라인으로 즉시 예측 가능한 구조입니다.
+
+### Feature Engineering (11개)
+
+| 카테고리 | Feature | 설명 |
+|---------|---------|------|
+| 시간 | day_of_week, is_weekend, week_of_month, month, day_of_month | 요일/주말/주차 패턴 |
+| 범주 | brand_enc, channel_enc | 브랜드/채널 인코딩 |
+| Lag | revenue_lag_1d, revenue_lag_7d | 전일/전주 동요일 매출 |
+| 통계 | revenue_rolling_7d | 7일 이동평균 |
+| 마케팅 | roas_feature | 광고 수익률 |
+
+### 모델 성능
+
+| 지표 | 값 | 해석 |
+|------|-----|------|
+| R² | 0.74 | 매출 변동의 74% 설명 (우수) |
+| MAPE | 3.9% | 평균 예측 오차 3.9% |
+| CV R² | 0.91 (±0.10) | 5-Fold 교차검증 안정적 |
+
+### Feature Importance
+
+전주 동요일 매출(revenue_lag_7d)이 82.7%로 압도적 — 주간 패턴이 매출 예측의 핵심 요인. GS홈쇼핑 방송일 등 외부 이벤트 feature 추가 시 정확도 향상 가능.
+
+### 비즈니스 활용
+
+- 다음 주 예상 매출 기반 재고 발주량 사전 조정
+- 예측 대비 실적 하회 시 이상 탐지 (예측 기반 동적 임계값)
+- 채널별 예측 매출로 광고 예산 사전 배분 최적화
 
 ## n8n 크롤링 워크플로우
 
@@ -477,9 +478,10 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - 경쟁사 크롤링 데이터 모델링 (Self-JOIN 비교, 8주 장기 추이)
 - Python 크롤링 파이프라인 (requests + BeautifulSoup + rate limiting)
 - Pandas 데이터 전처리 + matplotlib/seaborn 시각화 (한글 폰트 처리)
-- scikit-learn Ridge Regression으로 시계열 매출 예측 (Feature Engineering + 모델 평가)
-- scipy 통계 검정 (Welch's t-test, Mann-Whitney U, SRM chi-squared, Power Analysis)
-- A/B 테스트 실험 설계 + 통계 분석 + 비즈니스 해석 파이프라인
+- scipy 통계 검정 파이프라인 (Power Analysis → Welch's t-test → Mann-Whitney U → Cohen's d → SRM)
+- A/B 테스트 전체 분석 프로세스 설계: 실험 설계 검증 → 가설 검정 → 효과 크기 → 비즈니스 해석(ROI/Go-No-Go)
+- scikit-learn ML 파이프라인: Feature Engineering(Lag, Rolling, Encoding) → Random Forest → Cross Validation
+- Feature Importance 분석: 전주 동요일 매출(82.7%)이 예측 핵심 → 주간 패턴 중요성 확인
 - CLI 도구 설계 (argparse, 모듈별 실행, lazy import 패턴)
 - Window Function을 jsonb_agg() 안에서 직접 사용 불가 → 서브쿼리 패턴 학습
 
@@ -488,8 +490,7 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - 채널 믹스 변동 분석으로 채널 전략 의사결정 지원
 - 경쟁사 가격 변동과 자사 매출 상관 분석 (8주 크로스 체크)
 - 요일별 매출 패턴 분석 → 프로모션 타이밍 최적화
-- A/B 테스트로 자사몰 전환율 +22.6% 개선 검증, ROI 15,591% → Go 판정
-- ML 예측 → 재고 계획, 마케팅 예산 배분, 채널별 전략 수립
+- A/B 테스트 통계 분석 파이프라인 구축 (실험 설계 → 검정 → 효과 크기 → Go/No-Go 의사결정)
 - 분석 결과를 구체적 액션 아이템(광고비 증액, 딜 등록, 리타게팅)으로 변환
 
 ## 향후 계획
@@ -497,11 +498,11 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - [x] Supabase 테이블/RPC 함수 생성 + 샘플 데이터 적재
 - [x] Python 크롤링 스크립트 (쿠팡/네이버 자동 크롤링)
 - [x] 데이터 시각화 (matplotlib/seaborn 11종 차트)
+- [x] ML 매출 예측 (Random Forest, Feature Engineering, R²=0.74)
 - [x] 주간/월간 요약 리포트 (Supabase RPC + Pandas + WoW/MoM 분석)
 - [x] n8n에서 Python 크롤링 스크립트 연동 (Execute Command 노드)
-- [x] 매출 예측 + 비즈니스 액션 (Ridge Regression → 재고/마케팅/채널 전략)
 - [x] 비즈니스 인사이트 분석 (채널 믹스, 경쟁사 상관, 요일 패턴, 액션 추천)
-- [x] A/B 테스트 분석 (실험 설계 검증 + 통계 검정 + ROI + Go/No-Go)
+- [x] A/B 테스트 통계 분석 파이프라인 (실험 설계 → 가설 검정 → Go/No-Go)
 - [x] 경쟁사 8주 장기 추이 데이터 (가격 할인/복원 패턴 반영)
 - [ ] Tableau/Looker Studio 대시보드 연동
 

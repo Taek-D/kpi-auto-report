@@ -32,15 +32,15 @@
 ### JD 키워드 매칭 (앳홈 AX팀 데이터분석가)
 | JD 키워드 | 프로젝트 역량 증명 |
 |-----------|------------------|
-| **크롤링/스크래핑** | Playwright 쿠팡/네이버 크롤러 + market_competitors 적재 |
+| **크롤링/스크래핑** | requests+BS4 쿠팡 스크래핑 + 네이버 쇼핑 API + market_competitors 적재 |
 | **SQL** | Window Functions, CTEs, JSONB, 복합 인덱스 |
-| **Python** | Pandas 분석 + scikit-learn ML + scipy 통계 검정 |
+| **Python** | Pandas 분석 + scipy 통계 검정 |
 | **인사이트 도출** | 채널 믹스 변동, 경쟁사-매출 상관, 요일 패턴 분석 |
-| **A/B 테스트** | 실험 설계(Power Analysis) + 통계 검정(t-test, Mann-Whitney) + 비즈니스 해석 |
-| **ML 분석** | Ridge Regression 매출 예측 + 비즈니스 액션 플랜 + 리스크 평가 |
+| **A/B 테스트** | 실험 설계 검증(Power Analysis, SRM) → 가설 검정(Welch's t-test, Mann-Whitney U) → 효과 크기(Cohen's d) → ROI/Go-No-Go 의사결정 |
 | **n8n 자동화** | 8노드 워크플로우, 병렬 실행 |
 | **데이터 정합성** | UNIQUE 제약조건, COALESCE, NULL 처리 |
-| **시각화** | Matplotlib 11종 차트 (히트맵, 상관 scatter, A/B 비교, 예측 등) |
+| **ML/예측** | scikit-learn Random Forest 매출 예측 (Feature Engineering, Cross Validation, Feature Importance) |
+| **시각화** | Matplotlib 11종 차트 (히트맵, scatter, A/B 비교, ML 예측 등) |
 
 ---
 
@@ -149,7 +149,7 @@
 - `products`: 제품 마스터 14개 (앳홈 실제 제품명)
 - `product_daily_sales`: 제품별 일일 매출 + 평점/리뷰
 - `market_competitors`: 경쟁사 크롤링 데이터 (순위/가격/리뷰, 8주 추이)
-- `ab_test_results`: A/B 테스트 결과 (미닉스 자사몰 결제 페이지 개선)
+- `ab_test_results`: A/B 테스트 데이터 (미닉스 자사몰 결제 페이지 개선 시나리오, 시뮬레이션 기반 — 실무 동일 스키마)
 
 ### RPC 함수 (Supabase)
 1. `get_brand_kpis_yesterday()`: 브랜드별 어제 KPI + 채널 breakdown (JSONB)
@@ -180,10 +180,10 @@
 - [x] Slack 메시지 정상 수신 확인 (status: "sent", 619ms)
 - [x] GitHub push (d687e07)
 - [x] 비즈니스 인사이트 분석 모듈 (채널 믹스, 경쟁사 상관, 요일 패턴)
-- [x] A/B 테스트 분석 모듈 (실험 설계 검증 + 통계 검정 + 비즈니스 해석)
-- [x] ML 예측 비즈니스 스토리 (액션 플랜 + 리스크 평가)
+- [x] A/B 테스트 통계 분석 파이프라인 (실험 설계 → 가설 검정 → 효과 크기 → Go/No-Go)
 - [x] 경쟁사 8주 확장 데이터 (장기 추이 분석)
-- [x] 시각화 11종 차트 (히트맵, scatter, A/B 비교, 예측 등)
+- [x] 시각화 11종 차트 (히트맵, scatter, A/B 비교, ML 예측 등)
+- [x] ML 매출 예측 (Random Forest, Feature Engineering, R²=0.74, MAPE=3.9%)
 
 ---
 
