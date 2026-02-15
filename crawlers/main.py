@@ -14,6 +14,8 @@ Usage:
     python -m crawlers.main --forecast         # ML 매출 예측
     python -m crawlers.main --trend-collect    # 검색 트렌드 수집 (Google Trends + Naver DataLab)
     python -m crawlers.main --trend            # 트렌드-매출 상관 분석 + 차트
+    python -m crawlers.main --dashboard        # KPI 통합 대시보드 (HTML)
+    python -m crawlers.main --ad-perf          # 광고 퍼포먼스 분석
 """
 
 import argparse
@@ -169,6 +171,26 @@ def trend() -> None:
     print(result)
 
 
+def dashboard() -> None:
+    """KPI 통합 대시보드 HTML 생성"""
+    from .dashboard_generator import DashboardGenerator
+
+    logger.info("=" * 40 + " 대시보드 생성 " + "=" * 40)
+    generator = DashboardGenerator()
+    result = generator.run()
+    print(result)
+
+
+def ad_perf() -> None:
+    """광고 퍼포먼스 분석"""
+    from .ad_performance_analyzer import AdPerformanceAnalyzer
+
+    logger.info("=" * 40 + " 광고 퍼포먼스 분석 " + "=" * 40)
+    analyzer = AdPerformanceAnalyzer()
+    result = analyzer.run()
+    print(result)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="앳홈 경쟁사 크롤링 & 분석 파이프라인",
@@ -186,6 +208,8 @@ Examples:
   python -m crawlers.main --forecast              ML 매출 예측
   python -m crawlers.main --trend-collect          검색 트렌드 수집
   python -m crawlers.main --trend                  트렌드-매출 상관 분석
+  python -m crawlers.main --dashboard              KPI 통합 대시보드 HTML
+  python -m crawlers.main --ad-perf                광고 퍼포먼스 분석
         """,
     )
     parser.add_argument("--all", action="store_true", help="전체 파이프라인 실행 (크롤링+적재+분석)")
@@ -198,10 +222,12 @@ Examples:
     parser.add_argument("--forecast", action="store_true", help="ML 매출 예측 (Random Forest + Feature Importance)")
     parser.add_argument("--trend-collect", action="store_true", help="검색 트렌드 수집 (Google Trends + Naver DataLab)")
     parser.add_argument("--trend", action="store_true", help="트렌드-매출 상관 분석 (Pearson/Spearman + 선행 지표 + 성수기)")
+    parser.add_argument("--dashboard", action="store_true", help="KPI 통합 대시보드 HTML 생성 (output/dashboard.html)")
+    parser.add_argument("--ad-perf", action="store_true", help="광고 퍼포먼스 분석 (ROAS 효율 + 예산 재배분 + 기회 탐지)")
 
     args = parser.parse_args()
 
-    if not any([args.all, args.crawl, args.analyze, args.report, args.insight, args.abtest, args.forecast, args.trend_collect, args.trend]):
+    if not any([args.all, args.crawl, args.analyze, args.report, args.insight, args.abtest, args.forecast, args.trend_collect, args.trend, args.dashboard, args.ad_perf]):
         parser.print_help()
         sys.exit(1)
 
@@ -242,6 +268,14 @@ Examples:
     # 트렌드-매출 상관 분석
     if args.trend:
         trend()
+
+    # KPI 통합 대시보드
+    if args.dashboard:
+        dashboard()
+
+    # 광고 퍼포먼스 분석
+    if args.ad_perf:
+        ad_perf()
 
     logger.info("파이프라인 완료")
 

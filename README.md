@@ -59,7 +59,10 @@
 - **A/B 테스트 통계 분석**: 실험 설계 검증 → 가설 검정(t-test, Mann-Whitney U) → Cohen's d → ROI/Go-No-Go 의사결정
 - **ML 매출 예측**: scikit-learn Random Forest 기반 브랜드별 매출 예측 (R²=0.74, MAPE=3.9%)
 - **검색 트렌드-매출 상관 분석**: Google Trends + Naver DataLab 검색량 수집 → Pearson/Spearman 상관, 선행 지표(lead-lag), 성수기 탐지
-- **데이터 시각화**: matplotlib/seaborn 기반 15종 분석 차트 자동 생성
+- **광고 퍼포먼스 분석**: 채널별 ROAS/CPC/ROI 효율 등급(S/A/B/C), 예산 재배분 시뮬레이션, 성장 기회 탐지(스케일업/개선/축소)
+- **인사이트 스토리텔링**: 발견 → 근거 → 제안 → 예상 효과 4단계 구조 비즈니스 액션 추천
+- **KPI 통합 대시보드**: 브라우저에서 바로 열 수 있는 단일 HTML 대시보드 (7개 섹션, 인라인 차트)
+- **데이터 시각화**: matplotlib/seaborn 기반 18종 분석 차트 자동 생성
 - **주간/월간 요약 리포트**: Supabase RPC → Pandas → 브랜드별 WoW/MoM 변화율 + 채널 비중 분석
 - **n8n-크롤러 연동**: Execute Command 노드로 Python 크롤링 자동 실행 + Slack 결과 알림
 
@@ -117,7 +120,8 @@
 | Statistics | Python (scipy) | A/B 테스트 통계 검정 파이프라인 (Power Analysis → t-test → Mann-Whitney U → Cohen's d) |
 | ML | Python (scikit-learn) | 매출 예측 (Random Forest, Feature Engineering, Cross Validation) |
 | Trend Data | Python (pytrends + Naver DataLab API) | Google Trends / Naver 검색 트렌드 수집 |
-| Visualization | Python (matplotlib + seaborn) | 15종 분석 차트 자동 생성 |
+| Ad Analytics | Python (Pandas + numpy) | 광고 효율 분석, 예산 시뮬레이션, 기회 탐지 |
+| Visualization | Python (matplotlib + seaborn) | 18종 분석 차트 자동 생성 |
 
 ## 프로젝트 구조
 
@@ -139,6 +143,8 @@ KPI_Auto_Report(Athome)/
 │   ├── demand_forecaster.py    # ML 매출 예측 (scikit-learn Random Forest)
 │   ├── trend_collector.py      # 검색 트렌드 수집 (Google Trends + Naver DataLab)
 │   ├── trend_analyzer.py       # 트렌드-매출 상관 분석 + 차트 4종
+│   ├── dashboard_generator.py  # KPI 통합 대시보드 HTML 생성 (7개 섹션 + 스토리텔링)
+│   ├── ad_performance_analyzer.py # 광고 퍼포먼스 분석 (ROAS 효율 + 예산 시뮬레이션 + 기회 탐지)
 │   └── main.py                 # CLI 진입점 (argparse)
 ├── schema/                     # DB 스키마 DDL + 샘플 데이터 + RPC 함수
 │   ├── brand_daily_sales.sql   # 브랜드x채널 일일 매출 + RPC 2개
@@ -175,7 +181,11 @@ KPI_Auto_Report(Athome)/
 │   ├── trend_sales_overlay.png     # 트렌드 vs 매출 듀얼축 라인 (1x3 브랜드별)
 │   ├── trend_correlation_heatmap.png # 트렌드-매출 상관 히트맵 (Pearson r)
 │   ├── trend_lead_lag.png          # 선행 지표 lag별 상관계수 바차트
-│   └── trend_peak_season.png       # 성수기 트렌드 area + 피크 구간 강조
+│   ├── trend_peak_season.png       # 성수기 트렌드 area + 피크 구간 강조
+│   ├── ad_roas_comparison.png      # 채널별 ROAS 효율 등급 수평 바
+│   ├── ad_budget_simulation.png   # 현재 vs 최적 예산 배분 grouped bar
+│   ├── ad_opportunity_matrix.png  # ROAS vs 광고비 기회 매트릭스 산점도
+│   └── dashboard.html              # KPI 통합 대시보드 (단일 HTML)
 ├── docs/
 │   ├── SETUP.md                # 설치/설정 가이드
 │   ├── SQL_GUIDE.md            # SQL 쿼리 상세 가이드
@@ -275,6 +285,12 @@ python -m crawlers.main --trend-collect
 
 # 트렌드-매출 상관 분석 (Pearson/Spearman + 선행 지표 + 성수기 탐지)
 python -m crawlers.main --trend
+
+# KPI 통합 대시보드 HTML (브라우저에서 바로 열기)
+python -m crawlers.main --dashboard
+
+# 광고 퍼포먼스 분석 (ROAS 효율 + 예산 재배분 + 기회 탐지)
+python -m crawlers.main --ad-perf
 ```
 
 ### 크롤링 대상
@@ -286,7 +302,7 @@ python -m crawlers.main --trend
 | 소형건조기 | 쿠팡, 네이버 | 순위, 가격, 리뷰 수, 평점 |
 | 뷰티디바이스 | 쿠팡, 네이버 | 순위, 가격, 리뷰 수, 평점 |
 
-### 시각화 차트 (15종)
+### 시각화 차트 (18종)
 
 | 구분 | 차트 | 파일명 | 설명 |
 |------|------|--------|------|
@@ -305,6 +321,9 @@ python -m crawlers.main --trend
 | 트렌드 | 상관 히트맵 | `trend_correlation_heatmap.png` | 브랜드 x 소스 Pearson r |
 | 트렌드 | 선행 지표 | `trend_lead_lag.png` | lag별 상관계수 바차트 |
 | 트렌드 | 성수기 탐지 | `trend_peak_season.png` | 트렌드 area + 피크 구간 강조 |
+| 광고 | ROAS 비교 | `ad_roas_comparison.png` | 브랜드x채널 ROAS 수평 바 (효율 등급 색상) |
+| 광고 | 예산 시뮬레이션 | `ad_budget_simulation.png` | 현재 vs 최적 예산 배분 grouped bar |
+| 광고 | 기회 매트릭스 | `ad_opportunity_matrix.png` | ROAS vs 광고비 산점도 (4사분면) |
 
 > 차트에서 주황색 = 미닉스, 파란색 = 톰, 초록색 = 프로티원으로 구분됩니다.
 
@@ -499,6 +518,60 @@ Supabase RPC 함수를 통해 브랜드별 집계 데이터를 조회하고, Pan
   3. [재고] 미닉스: 02/01~02/05 성수기 → 해당 기간 재고 사전 확보
 ```
 
+## 광고 퍼포먼스 분석
+
+`--ad-perf` 옵션으로 채널별 광고 효율 분석, 예산 재배분 시뮬레이션, 성장 기회 탐지를 수행합니다. JD 요구 "광고/마케팅 퍼포먼스 데이터 분석"에 직접 대응하는 모듈입니다.
+
+### 분석 항목
+
+| 분석 | 내용 | 인사이트 예시 |
+|------|------|-------------|
+| 채널별 광고 효율 | ROAS, CPC, ROI% + S/A/B/C 등급 | "[S등급] 미닉스 자사몰: ROAS 8.9, CPC ₩76" |
+| 예산 재배분 시뮬레이션 | ROAS 가중 비례 배분 (최소 10%) | "최적 재배분 시 예상 매출 +7.5%" |
+| 성장 기회 탐지 | High ROAS + Low Spend = 스케일업 | "미닉스 자사몰: ROAS 8.9, 광고비 비중 8.6%" |
+
+### 출력 예시
+
+```
+📈 광고 퍼포먼스 분석
+=======================================================
+💰 채널별 ROAS 랭킹
+  [S등급] 미닉스 자사몰: ROAS 8.9 | CPC ₩76 | ROI 791%
+  [A등급] 미닉스 쿠팡: ROAS 7.1 | CPC ₩68 | ROI 610%
+
+📊 예산 재배분 시뮬레이션
+  현재 총 광고비: ₩3,710,000 → 예상 매출: ₩29,920,000
+  최적 재배분 시: ₩3,710,000 → 예상 매출: ₩32,150,000 (+7.5%)
+
+🎯 성장 기회
+  🟢 스케일업: 미닉스 자사몰 (ROAS 8.9, 광고비 비중 8.6%)
+  🟡 유지: 프로티원 쿠팡 (ROAS 6.2, 적정 수준)
+  🔴 개선필요: 톰 네이버 (ROAS 4.0, 광고비 비중 7.8%)
+```
+
+## KPI 통합 대시보드
+
+`--dashboard` 옵션으로 브라우저에서 바로 열 수 있는 단일 HTML 대시보드를 생성합니다. Supabase에서 데이터를 조회하고, matplotlib 차트를 base64로 인라인 임베딩하여 외부 의존성 없는 self-contained 파일(`output/dashboard.html`)을 출력합니다.
+
+### 대시보드 구성 (7개 섹션)
+
+| 섹션 | 내용 | 데이터 소스 |
+|------|------|------------|
+| 헤더 + KPI 요약 | 총 매출/주문/ROAS, WoW% | RPC: yesterday + last_week |
+| 브랜드별 KPI 카드 | 3개 브랜드 매출/주문/ROAS + 채널 비중 mini bar | RPC + brand_daily_sales |
+| 검색 트렌드 상관 | 상관 히트맵, 선행 지표, 성수기 탐지 | search_trends + brand_daily_sales |
+| 채널 믹스 & 요일 | 채널 비중 추이 차트, 요일별 매출 히트맵 | brand_daily_sales |
+| 광고 퍼포먼스 | ROAS 효율 등급 테이블 + 기회 신호 카드 | brand_daily_sales |
+| 매출 Top 5 제품 | 브랜드 태그 + 평점 테이블 | RPC: top_products |
+| 비즈니스 액션 추천 | 발견→근거→제안→효과 스토리텔링 | 전체 분석 결과 통합 |
+
+### 사용법
+
+```bash
+python -m crawlers.main --dashboard
+start output/dashboard.html   # 브라우저에서 열기
+```
+
 ## n8n 크롤링 워크플로우
 
 매주 월요일 07:00에 Python 크롤링 파이프라인을 자동 실행하는 n8n 워크플로우입니다.
@@ -552,6 +625,8 @@ Schedule (Mon 07:00) → Execute Command → Parse Result → Slack Notify
 - 외부 트렌드 데이터 연동: Google Trends (pytrends) + Naver DataLab REST API 수집 파이프라인
 - Cross-correlation 분석: lead-lag -7~+7일 시계열 상관 분석으로 선행 지표 탐지
 - 성수기 탐지: 75th percentile 기반 피크 구간 자동 식별
+- 광고 퍼포먼스 분석: ROAS/CPC/ROI 효율 등급 + ROAS 가중 예산 재배분 시뮬레이션 + 기회 매트릭스 산점도
+- 인사이트 스토리텔링: 발견→근거→제안→효과 4단계 구조로 데이터 기반 의사결정 프레임워크 구현
 - CLI 도구 설계 (argparse, 모듈별 실행, lazy import 패턴)
 - Window Function을 jsonb_agg() 안에서 직접 사용 불가 → 서브쿼리 패턴 학습
 
@@ -606,6 +681,8 @@ OWASP Top 10 기준 보안 취약점 점검을 수행했습니다 (2026-02-15).
 - [x] 경쟁사 8주 장기 추이 데이터 (가격 할인/복원 패턴 반영)
 - [x] 보안 점검 (OWASP Top 10 기준, SQL Injection/XSS/시크릿 관리)
 - [x] 검색 트렌드-매출 상관 분석 (Google Trends + Naver DataLab, Pearson/Spearman, 선행 지표, 성수기 탐지)
+- [x] 광고 퍼포먼스 분석 (ROAS 효율 등급 + 예산 재배분 시뮬레이션 + 성장 기회 탐지)
+- [x] 인사이트 스토리텔링 강화 (발견→근거→제안→효과 4단계 구조)
 - [ ] Supabase RLS 정책 활성화
 - [ ] Tableau/Looker Studio 대시보드 연동
 
