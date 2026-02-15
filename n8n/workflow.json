@@ -27,11 +27,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Content-Type",
@@ -60,11 +60,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Content-Type",
@@ -93,11 +93,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Content-Type",
@@ -126,11 +126,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWxodXNlZXdhYXhwYmd5YWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjM5NjMsImV4cCI6MjA4NjI5OTk2M30.HzfdZo19oy6Lp7T6BSkNjRuUF1KWEaOS429r5O-iNIo"
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
             },
             {
               "name": "Content-Type",

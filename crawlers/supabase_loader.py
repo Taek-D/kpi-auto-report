@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10
 
+ALLOWED_RPC_FUNCTIONS = {
+    "get_brand_kpis_yesterday",
+    "get_brand_kpis_last_week",
+    "get_top_products",
+    "get_competitor_changes",
+}
+
 
 class SupabaseLoader:
     """Supabase REST API를 통한 데이터 적재"""
@@ -96,6 +103,10 @@ class SupabaseLoader:
 
     def call_rpc(self, function_name: str, params: dict | None = None) -> list[dict]:
         """Supabase RPC 함수 호출"""
+        if function_name not in ALLOWED_RPC_FUNCTIONS:
+            logger.error(f"[Supabase] 허용되지 않은 RPC 함수: {function_name}")
+            return []
+
         if not self.url or not self.key:
             logger.error("[Supabase] API 키가 설정되지 않았습니다.")
             return []
