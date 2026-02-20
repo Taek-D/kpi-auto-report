@@ -215,8 +215,21 @@ for (var c = 0; c < competitors.length; c++) {
   }
 }
 
-var competitorSection = competitorAlerts.length > 0
-  ? '\n*🔍 경쟁사 모니터링*\n' + competitorAlerts.slice(0, 5).join('\n') + '\n'
+// 경쟁사 현황 요약 (데이터가 있으면 항상 표시)
+var competitorSummary = '';
+if (competitors.length > 0) {
+  var topComps = competitors.slice(0, 3).map(function(c) {
+    return c.product_name + ' [' + c.source + '] ' + c.current_ranking + '위';
+  });
+  competitorSummary = '현황: ' + topComps.join(', ');
+}
+
+var competitorSection = competitors.length > 0
+  ? '\n*🔍 경쟁사 모니터링*\n'
+    + (competitorAlerts.length > 0
+      ? competitorAlerts.slice(0, 5).join('\n') + '\n'
+      : '✅ 주요 변동 없음\n')
+    + competitorSummary + '\n'
   : '';
 
 // ============================================================================

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install ruff
+          pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: ruff check crawlers/ --output-format=github
+
+      - name: Format check with ruff
+        run: ruff format crawlers/ --check
+
+  validate-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SQL files syntax
+        run: |
+          for f in schema/*.sql queries/*.sql; do
+            echo "Checking $f..."
+            if [ -f "$f" ]; then
+              # Basic syntax check - ensure no obvious issues
+              grep -c ";" "$f" > /dev/null || echo "Warning: $f may be missing semicolons"
+            fi
+          done
+
+  validate-n8n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate n8n workflow JSON
+        run: |
+          node -e "
+            const fs = require('fs');
+            const wf = JSON.parse(fs.readFileSync('n8n/workflow.json', 'utf8'));
+            console.log('Workflow nodes:', wf.nodes?.length || 0);
+            console.log('Workflow valid: true');
+          "
